@@ -1,12 +1,3 @@
-# http://nuclear.mutantstargoat.com/articles/make/#automatic-include-dependency-tracking
-#-include $(dep)
-# include all dep files in the makefile
-
-# rule to generate a dep file by using the C preprocessor
-# (see man cpp for details on the -MM and -MT options)
-# %.d: %.c
-	# @$(CPP) $(CFLAGS) $< -MM -MT $(@:.d=.o) >$@
-
 CXX ?= g++
 RM ?= rm -f
 
@@ -20,38 +11,35 @@ objdir ?= ./obj
 
 .DEFAULT_GOAL := ball
 
-basesrc := $(wildcard $(srcdir)/*.cpp)
-baseobj := $(basesrc:$(srcdir)/%.cpp=$(objdir)/%.o)
-
-$(objdir)/%.o: $(srcdir)/%.cpp | $(objdir) $(objdir)/ball $(.DEFAULT_GOAL)states
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+COMPILE = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+LINK = $(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY: all
-all:
-	$(MAKE) ball
-
-################# BALL ################
-$(objdir)/ball:
-	mkdir $(objdir)/ball
-
-.PHONY: ballstates
-ballstates: $(srcdir)/states.h
-	cd $(srcdir); $(RM) states.h; ln -s ball/states.h states.h
-
-ballsrc = $(wildcard $(srcdir)/ball/*.cpp)
-ballobj := $(ballsrc:$(srcdir)/%.cpp=$(objdir)/%.o)
-
-.PHONY: ball
-ball: $(bindir)/ball
-$(bindir)/ball: $(baseobj) $(ballobj) | $(bindir)
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-
-$(objdir):
-	mkdir $(objdir)
+all: ball
 
 $(bindir):
 	mkdir $(bindir)
+
+################# BALL ################
+$(objdir)/ball/ball:
+	mkdir -p $(objdir)/ball/ball
+
+$(objdir)/ball/%.o: $(srcdir)/%.cpp | $(objdir)/ball/ball ballstates
+	$(COMPILE)
+
+.PHONY: ballstates
+ballstates:
+ifneq ($(shell readlink $(srcdir)/states.h),ball/states.h)
+	cd $(srcdir); $(RM) states.h; ln -s ball/states.h states.h
+endif
+
+ballsrc = $(shell find $(srcdir) $(srcdir)/ball -maxdepth 1 -type f -name "*.cpp")
+ballobj := $(ballsrc:$(srcdir)/%.cpp=$(objdir)/ball/%.o)
+
+.PHONY: ball
+ball: $(bindir)/ball
+$(bindir)/ball: $(ballobj) | $(bindir)
+	$(LINK)
 
 ################# UTILITES ################
 .PHONY: clean
