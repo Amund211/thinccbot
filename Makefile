@@ -11,7 +11,7 @@ CXX ?= g++
 RM ?= rm -f
 
 # Install in current folder
-prefix ?= ./
+prefix ?= .
 exec_prefix ?= $(prefix)
 bindir ?= $(exec_prefix)/bin
 
