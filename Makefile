@@ -23,15 +23,20 @@ objdir ?= ./obj
 basesrc := $(wildcard $(srcdir)/*.cpp)
 baseobj := $(basesrc:$(srcdir)/%.cpp=$(objdir)/%.o)
 
-$(objdir)/%.o: $(srcdir)/%.cpp | $(objdir) $(objdir)/ball
+$(objdir)/%.o: $(srcdir)/%.cpp | $(objdir) $(objdir)/ball $(.DEFAULT_GOAL)states
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 .PHONY: all
-all: ball
+all:
+	$(MAKE) ball
 
 ################# BALL ################
 $(objdir)/ball:
 	mkdir $(objdir)/ball
+
+.PHONY: ballstates
+ballstates: $(srcdir)/states.h
+	cd $(srcdir); $(RM) states.h; ln -s ball/states.h states.h
 
 ballsrc = $(wildcard $(srcdir)/ball/*.cpp)
 ballobj := $(ballsrc:$(srcdir)/%.cpp=$(objdir)/%.o)
