@@ -10,10 +10,7 @@
 #include "list.h"
 #include "game.h"
 
-void genTree(Node *nodep, unsigned int depth) {
-	if (depth == 0)
-		return;
-
+void genChildren(Node *nodep) {
 	List<Gamestate*> *stateps = new List<Gamestate*>;
 	List<Action> *actions = new List<Action>;
 
@@ -21,8 +18,10 @@ void genTree(Node *nodep, unsigned int depth) {
 	unsigned int amtActions = getActions(nodep->statep, stateps, actions);
 
 	// Terminal state
-	if (amtActions == 0)
+	if (amtActions == 0) {
+		nodep->amtChildren = 0;
 		return;
+	}
 
 	// Get initial state and action
 	ListNode<Gamestate*> *stateListnode = stateps->head;
@@ -44,14 +43,17 @@ void genTree(Node *nodep, unsigned int depth) {
 
 		// Append child node to parent
 		nodep->children[i] = childp;
-		genTree(childp, depth - 1);
 	}
 }
 
 Action bestAction(Node *nodep, unsigned int depth) {
+	// State must not be terminal
 	float value;
 	float childValue;
 	Action bestAction;
+
+	// Generate children of root node
+	genChildren(nodep);
 
 	value = -INFINITY;
 	for (unsigned int i=0; i<nodep->amtChildren; i++) {
@@ -66,6 +68,9 @@ Action bestAction(Node *nodep, unsigned int depth) {
 }
 
 float negamax(Node *nodep, unsigned int depth) {
+	// Generate children of node
+	genChildren(nodep);
+
 	if (depth == 0 || nodep->amtChildren == 0) {
 		return (nodep->statep->whitetoMove ? 1 : -1 ) * evaluation(nodep->statep);
 	}

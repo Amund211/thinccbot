@@ -16,8 +16,6 @@ int main() {
 
 	unsigned int depth = 15;
 
-	genTree(root, depth);
-
 	std::cout << negamax(root, depth) << std::endl;
 	std::cout << pprint(bestAction(root, depth)) << std::endl;
 }

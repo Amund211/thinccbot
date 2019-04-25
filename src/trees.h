@@ -11,7 +11,7 @@ struct Node
 	Node **children; // Array of pointers to children
 };
 
-void genTree(Node *nodep, unsigned int depth);
+void genChildren(Node *nodep);
 
 Action bestAction(Node *nodep, unsigned int depth);
 float negamax(Node *nodep, unsigned int depth);
