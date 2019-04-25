@@ -32,7 +32,7 @@ void genTree(Node *nodep, unsigned int depth) {
 	nodep->amtChildren = amtActions;
 	nodep->children = new Node*[amtActions];
 
-	for (int i=0; i<amtActions; i++) {
+	for (unsigned int i=0; i<amtActions; i++) {
 		// Create new child node
 		Node *childp = new Node;
 		childp->statep = stateListnode->data;
