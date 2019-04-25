@@ -57,7 +57,7 @@ Evaluation bestAction(Node *nodep, unsigned int depth) {
 
 	value = -INFINITY;
 	for (unsigned int i=0; i<nodep->amtChildren; i++) {
-		childValue = -negamax(nodep->children[i], depth - 1);
+		childValue = -negamax(nodep->children[i], depth - 1, -INFINITY, INFINITY);
 		if (childValue > value) {
 			// New best action
 			value = childValue;
@@ -67,17 +67,21 @@ Evaluation bestAction(Node *nodep, unsigned int depth) {
 	return { bestAction, value };
 }
 
-float negamax(Node *nodep, unsigned int depth) {
+float negamax(Node *nodep, unsigned int depth, float alpha, float beta) {
 	// Generate children of node
 	genChildren(nodep);
 
 	if (depth == 0 || nodep->amtChildren == 0) {
 		return (nodep->statep->whitetoMove ? 1 : -1 ) * evaluation(nodep->statep);
 	}
-	float value;
-	value = -INFINITY;
+	float value = -INFINITY;
 	for (unsigned int i=0; i<nodep->amtChildren; i++) {
-		value = std::max(value, -negamax(nodep->children[i], depth - 1));
+		value = std::max(value, -negamax(nodep->children[i], depth - 1, -beta, -alpha));
+		alpha = std::max(alpha, value);
+		if (alpha >= beta) {
+			// TODO: Clean up remaining children
+			break;
+		}
 	}
 	return value;
 }
