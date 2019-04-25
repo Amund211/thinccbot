@@ -18,6 +18,6 @@ int main() {
 
 	genTree(root, depth);
 
-	std::cout << minimax(root, depth) << std::endl;
+	std::cout << negamax(root, depth) << std::endl;
 	std::cout << pprint(bestAction(root, depth)) << std::endl;
 }

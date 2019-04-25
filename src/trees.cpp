@@ -49,56 +49,31 @@ void genTree(Node *nodep, unsigned int depth) {
 }
 
 Action bestAction(Node *nodep, unsigned int depth) {
-	// Depth >= 1
-	// Maybe maximizing by default???
 	float value;
 	float childValue;
-	const bool maximizing = nodep->statep->whitetoMove;
 	Action bestAction;
-	if (maximizing) {
-		value = -INFINITY;
-		for (unsigned int i=0; i<nodep->amtChildren; i++) {
-			childValue = minimax(nodep->children[i], depth - 1);
-			if (childValue > value) {
-				// New best action
-				value = childValue;
-				bestAction = nodep->children[i]->action;
-			}
+
+	value = -INFINITY;
+	for (unsigned int i=0; i<nodep->amtChildren; i++) {
+		childValue = -negamax(nodep->children[i], depth - 1);
+		if (childValue > value) {
+			// New best action
+			value = childValue;
+			bestAction = nodep->children[i]->action;
 		}
-		return bestAction;
-	} else {
-		value = INFINITY;
-		for (unsigned int i=0; i<nodep->amtChildren; i++) {
-			childValue = minimax(nodep->children[i], depth - 1);
-			if (childValue > value) {
-				// New best action
-				value = childValue;
-				bestAction = nodep->children[i]->action;
-			}
-		}
-		return bestAction;
 	}
+	return bestAction;
 }
 
-float minimax(Node *nodep, unsigned int depth) {
+float negamax(Node *nodep, unsigned int depth) {
 	if (depth == 0 || nodep->amtChildren == 0) {
-		return evaluation(nodep->statep);
+		return (nodep->statep->whitetoMove ? 1 : -1 ) * evaluation(nodep->statep);
 	}
-	// float value = -1 * std::numeric_limits<float>::infinity();
-	const bool maximizing = nodep->statep->whitetoMove;
 	float value;
-	if (maximizing) {
-		value = -INFINITY;
-		for (unsigned int i=0; i<nodep->amtChildren; i++) {
-			value = std::max(value, minimax(nodep->children[i], depth - 1));
-		}
-		return value;
-	} else {
-		value = INFINITY;
-		for (unsigned int i=0; i<nodep->amtChildren; i++) {
-			value = std::min(value, minimax(nodep->children[i], depth - 1));
-		}
-		return value;
+	value = -INFINITY;
+	for (unsigned int i=0; i<nodep->amtChildren; i++) {
+		value = std::max(value, -negamax(nodep->children[i], depth - 1));
 	}
+	return value;
 }
 

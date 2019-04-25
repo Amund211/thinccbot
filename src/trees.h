@@ -14,6 +14,6 @@ struct Node
 void genTree(Node *nodep, unsigned int depth);
 
 Action bestAction(Node *nodep, unsigned int depth);
-float minimax(Node *nodep, unsigned int depth);
+float negamax(Node *nodep, unsigned int depth);
 
 #endif
