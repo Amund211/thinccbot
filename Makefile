@@ -1,6 +1,8 @@
 CXX ?= g++
 RM ?= rm -f
 
+CXXFLAGS ?= -Wall -Wextra -Wpedantic
+
 # Install in current folder
 prefix ?= .
 exec_prefix ?= $(prefix)
