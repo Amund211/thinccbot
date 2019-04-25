@@ -11,9 +11,15 @@ struct Node
 	Node **children; // Array of pointers to children
 };
 
+struct Evaluation
+{
+	Action action;
+	float evaluation;
+};
+
 void genChildren(Node *nodep);
 
-Action bestAction(Node *nodep, unsigned int depth);
+Evaluation bestAction(Node *nodep, unsigned int depth);
 float negamax(Node *nodep, unsigned int depth);
 
 #endif

@@ -16,6 +16,9 @@ int main() {
 
 	unsigned int depth = 15;
 
-	std::cout << negamax(root, depth) << std::endl;
-	std::cout << pprint(bestAction(root, depth)) << std::endl;
+	Evaluation e = bestAction(root, depth);
+	std::cout <<
+		"Current player:\t" << (root->statep->whitetoMove ? "white" : "black") << std::endl <<
+		"Best action is:\t" << pprint(e.action) << std::endl <<
+		"Evaluation:\t" << e.evaluation << std::endl;
 }

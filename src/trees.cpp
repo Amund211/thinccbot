@@ -46,7 +46,7 @@ void genChildren(Node *nodep) {
 	}
 }
 
-Action bestAction(Node *nodep, unsigned int depth) {
+Evaluation bestAction(Node *nodep, unsigned int depth) {
 	// State must not be terminal
 	float value;
 	float childValue;
@@ -64,7 +64,7 @@ Action bestAction(Node *nodep, unsigned int depth) {
 			bestAction = nodep->children[i]->action;
 		}
 	}
-	return bestAction;
+	return { bestAction, value };
 }
 
 float negamax(Node *nodep, unsigned int depth) {
