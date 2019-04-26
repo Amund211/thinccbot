@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
 
-#include "list.h"
-#include "states.h"
-#include "trees.h"
-#include "game.h"
+#include "../list.h"
+#include "../states.h"
+#include "../trees.h"
+#include "../game.h"
 
 
 int main() {
