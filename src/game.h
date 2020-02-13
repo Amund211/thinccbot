@@ -7,5 +7,7 @@ unsigned int getActions(const Gamestate &statep, List<Gamestate> &gamestates, Li
 
 float evaluation(const Gamestate &state);
 
-std::string pprint(Action action);
+std::string aToString(const Action &action);
+std::string sToString(const Gamestate &state);
+
 #endif

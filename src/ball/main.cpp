@@ -18,6 +18,6 @@ int main() {
 	Evaluation e = bestAction(root, depth);
 	std::cout <<
 		"Current player:\t" << (root->state.whitetoMove ? "white" : "black") << std::endl <<
-		"Best action is:\t" << pprint(e.action) << std::endl <<
+		"Best action is:\t" << aToString(e.action) << std::endl <<
 		"Evaluation:\t" << e.evaluation << std::endl;
 }

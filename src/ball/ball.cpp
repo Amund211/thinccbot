@@ -64,9 +64,15 @@ float evaluation(const Gamestate &state) {
 	} else if (state.black >= 9) {
 		return -100;
 	}
-	return (float) ((int) state.white - (int) state.black);
+	return static_cast<float>(static_cast<int>(state.white) - static_cast<int>(state.black));
 }
 
-std::string pprint(const Action &action) {
+std::string aToString(const Action &action) {
 	return (action.put ? "put" : "no put");
+}
+
+std::string sToString(const Gamestate &state) {
+	return std::string("To move: ") + (state.whitetoMove ? "white\n" : "black\n") +
+		"\twhite: " + std::to_string(state.white) + ":" + std::to_string(state.timeSinceWhite) + "\n" +
+		"\tblack: " + std::to_string(state.black) + ":" + std::to_string(state.timeSinceBlack);
 }
