@@ -11,11 +11,13 @@
 #include "game.h"
 
 void genChildren(Node *nodep) {
-	List<Gamestate*> *stateps = new List<Gamestate*>;
-	List<Action> *actions = new List<Action>;
+	// TODO: make these lists of pointers to avoid large copies
+	// when they are transferred to the node
+	List<Gamestate> states {};
+	List<Action> actions {};
 
 	// Get list of legal moves
-	unsigned int amtActions = getActions(nodep->statep, stateps, actions);
+	unsigned int amtActions = getActions(nodep->state, states, actions);
 
 	// Terminal state
 	if (amtActions == 0) {
@@ -24,8 +26,8 @@ void genChildren(Node *nodep) {
 	}
 
 	// Get initial state and action
-	ListNode<Gamestate*> *stateListnode = stateps->head;
-	ListNode<Action> *actionListnode = actions->head;
+	ListNode<Gamestate> *stateListnode = states.head;
+	ListNode<Action> *actionListnode = actions.head;
 	
 	// Allocate children array for node
 	nodep->amtChildren = amtActions;
@@ -34,7 +36,7 @@ void genChildren(Node *nodep) {
 	for (unsigned int i=0; i<amtActions; i++) {
 		// Create new child node
 		Node *childp = new Node;
-		childp->statep = stateListnode->data;
+		childp->state = stateListnode->data;
 		childp->action = actionListnode->data;
 
 		// Get next state and action
@@ -72,7 +74,7 @@ float negamax(Node *nodep, unsigned int depth, float alpha, float beta) {
 	genChildren(nodep);
 
 	if (depth == 0 || nodep->amtChildren == 0) {
-		return (nodep->statep->whitetoMove ? 1 : -1 ) * evaluation(nodep->statep);
+		return (nodep->state.whitetoMove ? 1 : -1 ) * evaluation(nodep->state);
 	}
 	float value = -INFINITY;
 	for (unsigned int i=0; i<nodep->amtChildren; i++) {

@@ -9,8 +9,7 @@
 
 int main() {
 	Node *root = new Node;
-	root->statep = new Gamestate;
-	*root->statep = { true, 0, 0, 0, 0 };
+	root->state = { true, 0, 0, 0, 0 };
 	root->amtChildren = 2;
 	root->children = new Node*[2];
 
@@ -18,7 +17,7 @@ int main() {
 
 	Evaluation e = bestAction(root, depth);
 	std::cout <<
-		"Current player:\t" << (root->statep->whitetoMove ? "white" : "black") << std::endl <<
+		"Current player:\t" << (root->state.whitetoMove ? "white" : "black") << std::endl <<
 		"Best action is:\t" << pprint(e.action) << std::endl <<
 		"Evaluation:\t" << e.evaluation << std::endl;
 }

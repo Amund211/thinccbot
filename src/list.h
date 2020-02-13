@@ -29,12 +29,13 @@ public:
 			delete cur;
 		}
 	}
-	void add(T data){
+	T& add(const T &data){
 		ListNode<T> *lnodep = new ListNode<T>;
 		lnodep->data = data;
 		lnodep->next = this->head;
 		this->head = lnodep;
 		this->length++;
+		return lnodep->data;
 	}
 };
 

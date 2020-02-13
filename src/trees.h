@@ -5,7 +5,7 @@
 
 struct Node
 {
-	Gamestate *statep;
+	Gamestate state;
 	Action action;
 	unsigned int amtChildren;
 	Node **children; // Array of pointers to children
