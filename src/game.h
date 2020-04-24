@@ -1,13 +1,14 @@
-// Users must include <string> "list.h" "states.h"
-
 #ifndef GAME_H_INCLUDED
 #define GAME_H_INCLUDED
 
-unsigned int getActions(const Gamestate &statep, List<Gamestate> &gamestates, List<Action> &actions);
+#include <string>
+#include <vector>
 
-float evaluation(const Gamestate &state);
+struct Action;
+struct Gamestate;
 
-std::string aToString(const Action &action);
-std::string sToString(const Gamestate &state);
+unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions);
+
+float evaluation(Gamestate const* statep);
 
 #endif

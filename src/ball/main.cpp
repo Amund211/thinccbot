@@ -1,15 +1,14 @@
 #include <iostream>
 #include <string>
 
-#include "../list.h"
-#include "../states.h"
+#include "states.h"
 #include "../trees.h"
 #include "../game.h"
 
 
 int main() {
 	Node *root = new Node;
-	root->state = { true, 0, 0, 0, 0 };
+	root->state = new Gamestate{ true, 0, 0, 0, 0 };
 	std::cout << "Current state:" << std::endl << sToString(root->state) << "\n" << std::endl;
 
 	root->amtChildren = 2;

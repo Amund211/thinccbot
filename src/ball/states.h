@@ -5,6 +5,7 @@ struct Action
 {
 	bool put; // Whether or not to put
 };
+
 struct Gamestate
 {
 	bool whitetoMove;
@@ -13,5 +14,8 @@ struct Gamestate
 	unsigned int black;
 	unsigned int timeSinceBlack;
 };
+
+std::string aToString(Action const* actionp);
+std::string sToString(Gamestate const* statep);
 
 #endif
