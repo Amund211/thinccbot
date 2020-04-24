@@ -21,19 +21,6 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 	}
 
 
-	// Player does not put
-	actions.push_back(new Action{ false });
-	Gamestate* state1 = new Gamestate{*statep};
-	gamestates.push_back(state1);
-
-	// Update time since player last put
-	if (state1->whitetoMove) {
-		state1->timeSinceWhite++;
-	} else {
-		state1->timeSinceBlack++;
-	}
-	state1->whitetoMove = !state1->whitetoMove;
-
 	// Player does put
 	actions.push_back(new Action{ true });
 	Gamestate* state2 = new Gamestate{*statep};
@@ -56,6 +43,19 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 		}
 	}
 	state2->whitetoMove = !state2->whitetoMove;
+
+	// Player does not put
+	actions.push_back(new Action{ false });
+	Gamestate* state1 = new Gamestate{*statep};
+	gamestates.push_back(state1);
+
+	// Update time since player last put
+	if (state1->whitetoMove) {
+		state1->timeSinceWhite++;
+	} else {
+		state1->timeSinceBlack++;
+	}
+	state1->whitetoMove = !state1->whitetoMove;
 
 	return 2;
 }
