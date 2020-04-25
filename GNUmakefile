@@ -14,7 +14,7 @@ objdir ?= obj
 .DEFAULT_GOAL := ball
 
 .PHONY: all
-all: ball
+all: ball tictactoe
 
 COMPILE = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 LINK = $(CXX) -o $@ $^ $(LDFLAGS)
@@ -27,6 +27,9 @@ LINK = $(CXX) -o $@ $^ $(LDFLAGS)
 # Shortcuts to avoid having to type `make bin/GAME`
 .PHONY: ball
 ball: $(bindir)/ball
+
+.PHONY: tictactoe
+tictactoe: $(bindir)/tictactoe
 
 
 ################# RULES ################
