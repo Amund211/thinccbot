@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "states.h"
 #include "../game.h"
@@ -30,6 +31,16 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 				newstatep->board[y*3 + x] = statep->xToMove ? 1 : -1;
 				newstatep->xToMove = !newstatep->xToMove;
 			}
+		}
+	}
+
+	// Place a winning move first
+	for (unsigned int i=1; i<gamestates.size(); i++) {
+		// Evaluation and player have the same sign -> win
+		if (evaluation(gamestates[i]) * (!gamestates[i]->xToMove ? 1 : -1) > 0) {
+			std::swap(gamestates[0], gamestates[i]);
+			std::swap(actions[0], actions[i]);
+			break;
 		}
 	}
 
