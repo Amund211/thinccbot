@@ -46,9 +46,6 @@ int main() {
 		}
 
 		// Free old root
-		deleteState(root->state);
-		deleteAction(root->action);
-		delete root->children;
 		delete root;
 
 		root = nextRoot;

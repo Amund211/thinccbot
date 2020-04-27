@@ -9,6 +9,7 @@ struct Node
 	Action* action;
 	unsigned int amtChildren;
 	Node** children; // Array of pointers to children
+	~Node();
 };
 
 struct Evaluation
