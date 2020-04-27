@@ -35,6 +35,16 @@ void genChildren(Node* nodep)
 	}
 }
 
+void freeSubtree(Node* nodep)
+{
+	deleteState(nodep->state);
+	deleteAction(nodep->action);
+	for (unsigned int i=0; i<nodep->amtChildren; i++)
+		freeSubtree(nodep->children[i]);
+	delete nodep->children;
+	delete nodep;
+}
+
 Evaluation bestAction(Node* nodep, unsigned int depth)
 {
 	// State must not be terminal

@@ -19,6 +19,8 @@ struct Evaluation
 
 void genChildren(Node* nodep);
 
+void freeSubtree(Node* nodep);
+
 Evaluation bestAction(Node* nodep, unsigned int depth);
 float negamax(Node* nodep, unsigned int depth, float alpha, float beta);
 

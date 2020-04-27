@@ -5,6 +5,14 @@
 #include "states.h"
 #include "../game.h"
 
+void deleteState(Gamestate* state) {
+	delete state;
+}
+
+void deleteAction(Action* action) {
+	delete action;
+}
+
 bool gameOver(Gamestate const* statep)
 {
 	if (evaluation(statep) != 0)

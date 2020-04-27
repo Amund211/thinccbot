@@ -24,7 +24,7 @@ int main() {
 
 	std::cout << sToString(root->state);
 	while (!gameOver(root->state)) {
-		unsigned int x, y;
+		unsigned int x, y, nextRoot;
 
 		if (player && root->state->xToMove) {
 			// No input-validation
@@ -38,9 +38,12 @@ int main() {
 		// Find the corresponding child-node
 		for (unsigned int i=0; i<root->amtChildren; i++) {
 			if (root->children[i]->action->x == x && root->children[i]->action->y == y) {
-				root = root->children[i];
+				nextRoot = i;
+			} else {
+				freeSubtree(root->children[i]);
 			}
 		}
+		root = root->children[nextRoot];
 
 		std::cout << sToString(root->state);
 	}
