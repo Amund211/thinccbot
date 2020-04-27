@@ -13,8 +13,6 @@ void genChildren(Node* nodep)
 		return;
 	}
 
-	// TODO: make these lists of pointers to avoid large copies
-	// when they are transferred to the node
 	std::vector<Gamestate*> states;
 	std::vector<Action*> actions;
 
@@ -32,15 +30,8 @@ void genChildren(Node* nodep)
 	nodep->children = new Node*[amtActions];
 
 	for (unsigned int i=0; i<amtActions; i++) {
-		Node* childp = new Node{states[i], actions[i], 0, nullptr};
-
-		//// Create new child node
-		//Node* childp = new Node;
-		//childp->state = states[i];
-		//childp->action = actions[i];
-
 		// Append child node to parent
-		nodep->children[i] = childp;
+		nodep->children[i] = new Node{states[i], actions[i], 0, nullptr};
 	}
 }
 
