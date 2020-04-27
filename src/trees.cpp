@@ -8,6 +8,11 @@
 
 void genChildren(Node* nodep)
 {
+	if (nodep->children) {
+		// Node already has children
+		return;
+	}
+
 	// TODO: make these lists of pointers to avoid large copies
 	// when they are transferred to the node
 	std::vector<Gamestate*> states;

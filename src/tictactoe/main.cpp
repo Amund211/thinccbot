@@ -25,6 +25,7 @@ int main() {
 	std::cout << sToString(root->state);
 	while (!gameOver(root->state)) {
 		unsigned int x, y;
+
 		if (player && root->state->xToMove) {
 			// No input-validation
 			std::cin >> x >> y;
@@ -33,8 +34,14 @@ int main() {
 			x = e.action->x;
 			y = e.action->y;
 		}
-		root->state->board[3*y + x] = root->state->xToMove ? 1 : -1;
-		root->state->xToMove = !root->state->xToMove;
+
+		// Find the corresponding child-node
+		for (unsigned int i=0; i<root->amtChildren; i++) {
+			if (root->children[i]->action->x == x && root->children[i]->action->y == y) {
+				root = root->children[i];
+			}
+		}
+
 		std::cout << sToString(root->state);
 	}
 }
