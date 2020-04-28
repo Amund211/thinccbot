@@ -31,6 +31,9 @@ ball: $(bindir)/ball
 .PHONY: tictactoe
 tictactoe: $(bindir)/tictactoe
 
+.PHONY: connectfour
+connectfour: $(bindir)/connectfour
+
 
 ################# RULES ################
 $(bindir)/:
