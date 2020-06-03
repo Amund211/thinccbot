@@ -14,7 +14,7 @@ objdir ?= obj
 .DEFAULT_GOAL := ball
 
 .PHONY: all
-all: ball tictactoe
+all: ball tictactoe connectfour
 
 COMPILE = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 LINK = $(CXX) -o $@ $^ $(LDFLAGS)
