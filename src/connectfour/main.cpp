@@ -12,12 +12,9 @@ int main() {
 	Node *root = new Node;
 	root->state = new Gamestate();
 
-	//std::cerr << "Current state:" << std::endl << sToString(root->state) << "\n" << std::endl;
-
-	// The last move you should look at should be your opponents move
-	// Use even depths
-	unsigned int depth = 8;
+	unsigned int depth = 9;
 	bool player = true;
+	unsigned int ply = 0;
 
 	Evaluation e = bestAction(root, depth);
 	std::cout <<
@@ -31,7 +28,7 @@ int main() {
 
 
 		std::cout << "Current state evaluation:\t" << evaluation(root->state) << std::endl;
-		if (player && !root->state->yellowToMove) {
+		if (player && root->state->yellowToMove) {
 			// No input-validation
 			std::cin >> column;
 		} else {
@@ -55,6 +52,7 @@ int main() {
 		root = nextRoot;
 
 		std::cout << "\n" << sToString(root->state);
+		std::cout << "Ply: " << ++ply << std::endl;
 	}
 	std::cout << e.evaluation << std::endl;
 	std::cout << evaluation(root->state) << std::endl;
