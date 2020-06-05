@@ -20,6 +20,19 @@ int test()
 		FEN = "4q1k1/p5b1/1p4pp/nRr1Pp2/Q1p2B2/3b1N2/P4PPP/4R1K1 w - - 2 26";
 
 		FEN = "8/8/1p6/p1pppppp/PP6/2PPPPPP/8/8 b - - 1 1";
+		FEN = "k7/8/8/8/8/1p5P/8/K7 w - - 1 1";
+		FEN = "k7/8/8/8/8/8/1p5P/K7 w - - 1 1";
+		FEN = "k7/8/8/8/8/8/1p5P/1K6 b - - 1 1";
+
+		FEN = "k7/8/8/8/8/1p5P/8/K7 w - - 1 1";
+
+		FEN = "k7/8/8/8/8/2n5/8/K7 w - - 1 1";
+		FEN = "k7/8/8/8/3K4/2n5/8/8 w - - 1 1";
+
+		FEN = "k7/8/8/4n3/3K4/2n5/8/8 w - - 1 1";
+
+		FEN = "k7/8/6n1/4n3/3K4/2n5/n7/8 w - - 1 1";
+		//FEN = "k7/8/6n1/8/3K4/8/n7/8 w - - 1 1";
 	}
 	try {
 		s = FEN;
@@ -30,7 +43,7 @@ int test()
 
 	std::cout << FEN << std::endl;
 	std::cout << s.toFEN() << std::endl;
-	drawBoard(s.board, BLACK, true);
+	drawBoard(s.board, WHITE, true);
 
 	Node *root = new Node{&s, nullptr, 0, nullptr};
 
@@ -43,6 +56,7 @@ int test()
 
 	Evaluation e = bestAction(root, depth);
 
+	std::cout << root->amtChildren << " valid moves" << std::endl;
 	for (unsigned int i=0; i<root->amtChildren; i++) {
 		std::cout << aToString(root->children[i]->action) << std::endl;
 	}
@@ -73,6 +87,10 @@ int play()
 	FEN = "8/8/8/p1PPP3/P1P4p/7P/8/5n2 b - - 0 1";
 
 	FEN = "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 1 1";
+
+	FEN = "k7/8/8/8/8/1p5P/8/K7 w - - 1 1";
+
+	//FEN = "k7/8/8/8/8/7P/1p6/K7 b - - 1 1";
 	try {
 		sp = new Gamestate {FEN};
 	} catch (const std::invalid_argument& ia) {
@@ -84,9 +102,9 @@ int play()
 
 	std::cerr << "Current state:" << std::endl << sToString(root->state) << "\n" << std::endl;
 
-	unsigned int depth = 6;
+	unsigned int depth = 10;
 	bool player = false;
-	bool playerWhite = false;
+	bool playerWhite = true;
 
 	Evaluation e = bestAction(root, depth);
 	std::cout <<

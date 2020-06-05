@@ -17,6 +17,9 @@ struct Coordinate
 	int file;
 
 	//inline unsigned int toOffset() const { return rank*8 + file; };
+	Coordinate(int rank, int file): rank{rank}, file{file} {}
+	Coordinate() = default;
+	//Coordinate(const Coordinate&) = default;
 
 	inline bool isValid() const {return rank<8 && rank>=0 && file<8 && file>=0;};
 
@@ -32,8 +35,13 @@ struct Coordinate
 	Coordinate& operator +=(const Coordinate& b);
 	Coordinate operator -(const Coordinate& b) const;
 	Coordinate& operator -=(const Coordinate& b);
+	Coordinate operator -() const;
+
 	bool operator ==(const Coordinate& b) const;
 	bool operator !=(const Coordinate& b) const;
+
+	// For less<Coordinate>
+	bool operator <(const Coordinate& b) const;
 };
 
 

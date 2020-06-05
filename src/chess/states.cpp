@@ -79,6 +79,11 @@ Coordinate& Coordinate::operator -=(const Coordinate& b)
 	return *this;
 }
 
+Coordinate Coordinate::operator -() const
+{
+	return {-rank, -file};
+}
+
 bool Coordinate::operator ==(const Coordinate& b) const
 {
 	return rank == b.rank && file == b.file;
@@ -87,6 +92,12 @@ bool Coordinate::operator ==(const Coordinate& b) const
 bool Coordinate::operator !=(const Coordinate& b) const
 {
 	return rank != b.rank || file != b.file;
+}
+
+bool Coordinate::operator <(const Coordinate& b) const
+{
+	// Random implementation used for less<Coordinate>
+	return (4*rank + file) < (4*b.rank + b.file);
 }
 
 Piece Board::get(Coordinate pos) const
@@ -234,7 +245,7 @@ Gamestate::Gamestate(std::string FEN)
 	// En passant target square
 	if (FEN_match[11] == '-') {
 		// No passant pawn
-		passantSquare = {0, 0};
+		passantSquare = {-1, -1};
 	} else {
 		passantSquare = SAN2Coord(FEN_match[4]);
 	}
@@ -292,7 +303,7 @@ std::string Gamestate::toFEN() const
 	}
 
 	// En passant target square
-	if (!passantSquare.rank && !passantSquare.file)
+	if (!passantSquare.isValid())
 		oss << " - ";
 	else
 		oss << " " << passantSquare.toString() << " ";
@@ -315,6 +326,7 @@ Coordinate findKing(const Board& b, Color c)
 				return {rank, file};
 		}
 	}
+	drawBoard(b, WHITE, true);
 	throw std::invalid_argument("Board does not have a king of the given color");
 }
 
