@@ -228,7 +228,7 @@ const std::map<Delta, unsigned int> kingMoveOrder {
 	{{ 1, -1}, 7}
 };
 
-void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, std::array<bool, 8> attackedSquares, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, const std::array<bool, 8>& attackedSquares, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
 {
 	for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 		Coordinate target = pos + it->first;
@@ -262,22 +262,20 @@ void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, std::
 
 }
 
-AttackStatus checkAttack(const Board& b, const Coordinate& start, const Coordinate& end, Color opponent, Coordinate& pinnedPos)
+AttackStatus checkAttack(const Board& b, const Coordinate& kingPos, const Coordinate& attackerPos, Color opponent, Coordinate& pinnedPos)
 {
-	// HUGE TIP
-	// PASS IN REFERENCE TO A SINGLE BOOL FIELD WHICH SAYS WHETHER THE SQUARE NEXT TO THE KING IS UNDER ATTACK
+	// Return the AttackStatus of the king at pos kingPos due to the enemy piece
+	// at pos attackerPos
+	// If the return-value is AttackStatus::PINNED, pinnedPos is set to the
+	// position of the pinned piece
 
-	// Return true if one of our pieces are pinned on this line
-	// If this is the case pinnedPos is the position of that piece
-	// Start is the position of the friendly king, and end is the position of the attacking piece
-
-	// Assumes that start and end are on the same diagonal/rank/file
-	Delta step {(end-start).step()};
+	// Assumes that kingPos and attackerPos are on the same diagonal/rank/file
+	Delta step {(attackerPos-kingPos).step()};
 
 	bool blocked = false;
 
 	// Start look at all the spaces between the friendly king and the attacking piece
-	for (Coordinate cur{start + step}; cur != end; cur += step) {
+	for (Coordinate cur{kingPos + step}; cur != attackerPos; cur += step) {
 		Piece tmpPiece = b.get(cur);
 		if (pieceType(tmpPiece) != NONE) {
 			if (pieceColor(tmpPiece) == opponent) {
@@ -304,6 +302,28 @@ AttackStatus checkAttack(const Board& b, const Coordinate& start, const Coordina
 		return AttackStatus::ATTACKED;
 }
 
+void checkGuarded(const Board& b, const Coordinate& target, const Coordinate& kingPos, const Coordinate& attackerPos, std::array<bool, 8>& attackedSquares)
+{
+	// Assumes that target and attackerPos are on the same diagonal/rank/file
+	Delta step {(target-attackerPos).step()};
+
+	// Start look at all the spaces between the attacking piece and the target
+	for (Coordinate cur{attackerPos + step}; cur != target; cur += step) {
+		Delta kingMove {cur-kingPos};
+		if (kingMove.infNorm() == 1)
+			// Valid king-move
+			attackedSquares[kingMoveOrder.at(kingMove)] = true;
+
+		Piece tmpPiece = b.get(cur);
+		if (pieceType(tmpPiece) != NONE) {
+			// Further squares are blocked by this piece
+			return;
+		}
+	}
+	// Didn't return -> no blockers so far -> target is guarded
+	attackedSquares[kingMoveOrder.at(target-kingPos)] = true;
+}
+
 void drawBoard(const Board&, Color, bool);
 
 bool gameOver(Gamestate const* statep);
@@ -320,7 +340,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 
 	// Bool array for the squares around the king
 	// Ordered according to kingMoveOrder
-	std::array<bool, 8> kingNeighborAttacked = {false, false, false, false, false, false, false, false};
+	std::array<bool, 8> attackedSquares = {false, false, false, false, false, false, false, false};
 
 	// If there is an associated object, all valid moves must kill the piece at that pos
 	std::unique_ptr<Coordinate> mustKill;
@@ -340,13 +360,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 	Coordinate pinnedPos;
 
 	for (int rank=0; rank<8; rank++) {
-		if (amtChecks >= 2)
-			break;
-
 		for (int file=0; file<8; file++) {
-			if (amtChecks >= 2)
-				break;
-
 			Piece p = statep->board.get({rank, file});
 			if (p == NONE || pieceColor(p) == toMove)
 				// No piece or our piece
@@ -356,9 +370,9 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 			switch (pieceType(p)) {
 				case PAWN:
 					if (delta.rank == opponentDirection && std::abs(delta.file) == 1) {
-						amtChecks++;
-						if (!mustKill)
+						if (!amtChecks)
 							mustKill = std::make_unique<Coordinate>(rank, file);
+						amtChecks++;
 					} else {
 						// Check if the pawn is guarding any squares next to the king
 						int relativeAttackRank = delta.rank - opponentDirection;
@@ -368,7 +382,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 						for (int fileOffset=-1; fileOffset<=1; fileOffset+=2) {
 							auto it = kingMoveOrder.find({-relativeAttackRank, -relativeAttackCenterFile + fileOffset});
 							if (it != kingMoveOrder.end()) {
-								kingNeighborAttacked[it->second] = true;
+								attackedSquares[it->second] = true;
 							}
 						}
 					}
@@ -377,15 +391,15 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 					// Equivalient with valid knight-move when
 					// rank and file are integers
 					if (std::abs(delta.rank * delta.file) == 2) {
-						amtChecks++;
-						if (!mustKill)
+						if (!amtChecks)
 							mustKill = std::make_unique<Coordinate>(rank, file);
+						amtChecks++;
 					} else {
 						// Check if the knight is guarding any squares next to the king
 						for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 							Delta guardTarget = delta + it->first;
 							if (std::abs(guardTarget.rank * guardTarget.file) == 2) {
-								kingNeighborAttacked[it->second] = true;
+								attackedSquares[it->second] = true;
 							}
 						}
 					}
@@ -395,31 +409,58 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 				case QUEEN:
 					// New scope to not initialize any new variables in the switch
 					{
+						PieceType type = pieceType(p);
 						bool diag = delta.isDiagonal();
 						bool straight = delta.isStraight();
-						if (!straight && !diag)
-							continue;
-						if (pieceType(p) == BISHOP && !diag)
-							continue;
-						if (pieceType(p) == ROOK && !straight)
-							continue;
+						bool moveDiag = (type == BISHOP) || (type == QUEEN);
+						bool moveStraight = (type == ROOK) || (type == QUEEN);
 
-						AttackStatus status = checkAttack(statep->board, kingPos, {rank, file}, opponent, pinnedPos);
-						switch (status) {
-							case AttackStatus::CLEAR:
-								break;
-							case AttackStatus::ATTACKED:
-								amtChecks++;
-								if (!mustBlock)
-									mustBlock = std::make_unique<Line>(kingPos, Coordinate{rank, file});
+						bool isLinedUp = (diag && moveDiag) || (straight && moveStraight);
 
-								// Remove kingmove
-								kingNeighborAttacked[kingMoveOrder.at(-delta.step())] = true;
-								break;
-							case AttackStatus::PINNED:
-								pinnedPositions.emplace(pinnedPos, Line{kingPos, {rank, file}});
-								break;
+						if (isLinedUp) {
+							AttackStatus status = checkAttack(statep->board, kingPos, {rank, file}, opponent, pinnedPos);
+							switch (status) {
+								case AttackStatus::CLEAR:
+									break;
+								case AttackStatus::ATTACKED:
+									if (!amtChecks)
+										mustBlock = std::make_unique<Line>(kingPos, Coordinate{rank, file});
+									amtChecks++;
+
+									// King can't move towards or away from this attacker
+									attackedSquares[kingMoveOrder.at(delta.step())] = true;
+									attackedSquares[kingMoveOrder.at(-delta.step())] = true;
+									break;
+								case AttackStatus::PINNED:
+									pinnedPositions.emplace(pinnedPos, Line{kingPos, {rank, file}});
+									break;
+							}
+						} else {
+							// Not checking or pinning
+							// See if it blocks any squares next to the king
+							if (moveStraight) {
+								if (std::abs(delta.file) == 1) {
+									checkGuarded(statep->board, {kingPos.rank + (delta.rank > 0 ? 1 : -1), file}, kingPos, {rank, file}, attackedSquares);
+								}
+
+								if (std::abs(delta.rank) == 1) {
+									checkGuarded(statep->board, {rank, kingPos.file + (delta.file > 0 ? 1 : -1)}, kingPos, {rank, file}, attackedSquares);
+								}
+							}
+
+							/*
+							if (moveDiag) {
+								if (std::abs(delta.file) == 1) {
+									checkGuarded(statep->board, {kingPos.rank + delta.rank > 0 ? 1 : -1, kingPos.file - delta.file}, kingPos, {rank, file}, attackedSquares)
+								}
+
+								if (std::abs(delta.rank) == 1) {
+									checkGuarded(statep->board, {kingPos.rank - delta.rank, kingPos.file + delta.file > 0 ? 1 : -1}, kingPos, {rank, file}, attackedSquares)
+								}
+							}
+							*/
 						}
+
 					}
 					break;
 				case KING:
@@ -430,7 +471,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 					for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 						Delta guardTarget = delta + it->first;
 						if (guardTarget.infNorm() == 1) {
-							kingNeighborAttacked[it->second] = true;
+							attackedSquares[it->second] = true;
 						}
 					}
 					break;
@@ -442,7 +483,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 
 	// 2+ attackers -> only king-moves can get out of check
 	if (amtChecks >= 2) {
-		genKingMoves(statep, toMove, kingPos, kingNeighborAttacked, gamestates, actions);
+		genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);
 		return actions.size();
 	}
 
@@ -477,8 +518,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 					case QUEEN:
 						break;
 					case KING:
-						//if (!mustKill && !mustBlock)
-							genKingMoves(statep, toMove, kingPos, kingNeighborAttacked, gamestates, actions);
+						genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);
 						break;
 					default:
 						continue;

@@ -7,7 +7,7 @@
 #include "../trees.h"
 #include "../game.h"
 
-constexpr bool TEST = false;
+constexpr bool TEST = true;
 
 int test()
 {
@@ -33,6 +33,15 @@ int test()
 
 		FEN = "k7/8/6n1/4n3/3K4/2n5/n7/8 w - - 1 1";
 		//FEN = "k7/8/6n1/8/3K4/8/n7/8 w - - 1 1";
+
+		//FEN = "k7/rr6/8/8/8/8/7P/K7 w - - 1 1";
+		//FEN = "k7/rr6/8/8/8/8/6rP/K7 w - - 1 1";
+		//FEN = "k7/rr6/8/8/8/8/6rP/K6r w - - 1 1";
+
+		//FEN = "k7/3rr3/7r/3K3r/8/8/8/8 w - - 1 1";
+		//FEN = "k7/3rr3/7r/3K3r/7r/8/8/8 w - - 1 1";
+
+		//FEN = "k7/8/7r/3K4/8/8/8/8 w - - 1 1";
 	}
 	try {
 		s = FEN;
@@ -56,7 +65,7 @@ int test()
 
 	Evaluation e = bestAction(root, depth);
 
-	std::cout << root->amtChildren << " valid moves" << std::endl;
+	std::cout << root->amtChildren << " valid move(s)" << std::endl;
 	for (unsigned int i=0; i<root->amtChildren; i++) {
 		std::cout << aToString(root->children[i]->action) << std::endl;
 	}

@@ -23,11 +23,6 @@ void drawBoard(const Board& b, Color perspective, bool colorTerminal)
 		rankDirection = 1;
 	}
 
-	std::cout << "  ";
-	for (int file=leftFile; file>=0 && file<8; file-=rankDirection)
-		std::cout << " " << static_cast<char>('a' + file) << " ";
-	std::cout << std::endl;
-
 	for (int rank=topRank; rank>=0 && rank<8; rank+=rankDirection) {
 		std::cout << rank + 1 << " ";
 		for (int file=leftFile; file>=0 && file<8; file-=rankDirection) {
@@ -47,5 +42,10 @@ void drawBoard(const Board& b, Color perspective, bool colorTerminal)
 
 		std::cout << std::endl;
 	}
+
+	std::cout << "  ";
+	for (int file=leftFile; file>=0 && file<8; file-=rankDirection)
+		std::cout << " " << static_cast<char>('a' + file) << " ";
+	std::cout << std::endl;
 }
 
