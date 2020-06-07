@@ -247,7 +247,7 @@ Gamestate::Gamestate(std::string FEN)
 		// No passant pawn
 		passantSquare = {-1, -1};
 	} else {
-		passantSquare = SAN2Coord(FEN_match[4]);
+		passantSquare = SAN2Coord(FEN_match[11]);
 	}
 	
 

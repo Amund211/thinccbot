@@ -24,7 +24,7 @@ struct Line
 		step = {delta.rank / maxSteps, delta.file/maxSteps};
 	}
 
-	bool contains(Coordinate pos)
+	bool contains(Coordinate pos) const
 	{
 		// Return true if pos is on the line, including the endpoint, but not including the start
 		Delta direction = pos - start;
@@ -82,7 +82,7 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 	return newstatep;
 }
 
-void genPawnMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, std::map<Coordinate, Line> pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genPawnMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, const std::map<Coordinate, Line>& pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
 {
 	int direction = pawnDirection(c);
 	Coordinate target;
@@ -125,7 +125,7 @@ void genPawnMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_
 				newstatep->rule50Ply = 0;
 			}
 		} else if (target == statep->passantSquare) {
-			if (mustKill && statep->passantSquare != *mustKill)
+			if (mustKill && statep->passantSquare - Delta{direction, 0} != *mustKill)
 				continue;
 			if (mustBlock && !mustBlock->contains(target))
 				continue;
@@ -203,7 +203,7 @@ const std::array<Delta, 8> knightMoves = {
 };
 
 
-void genKnightMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, std::map<Coordinate, Line> pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genKnightMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, const std::map<Coordinate, Line>& pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
 {
 	for (Coordinate offset : knightMoves) {
 		Coordinate target = pos + offset;

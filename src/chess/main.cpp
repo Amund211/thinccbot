@@ -73,6 +73,11 @@ int test()
 		FEN = "k7/8/8/8/3K4/2b5/7P/8 w - - 1 1";
 
 		FEN = "k7/8/8/8/q1N1K3/8/7P/8 w - - 1 1";
+
+		// Double en-passant
+		FEN = "5B2/6p1/8/4RP1k/4pK1N/6P1/4qP2/8 b - - 1 1";
+		FEN = "5B2/8/8/4RPpk/4pK1N/6P1/4qP2/8 w - g6 1 1";
+		FEN = "5B2/8/6P1/4R2k/4pK1N/6P1/4qP2/8 b - - 1 1";
 	}
 	try {
 		s = FEN;
