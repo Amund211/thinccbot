@@ -23,7 +23,7 @@ const std::regex FEN_regex(
 	// To move index 9
 	"([wb]) "
 	// Castling avaliability index 10
-	"(-|[KQkq]{1,4}) "
+	"(-|(?:K?Q?k?q?)) "
 	// En passant target square index 11
 	"(-|[a-h][36]) "
 	// Halfmove clock index 12

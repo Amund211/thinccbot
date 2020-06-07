@@ -13,6 +13,7 @@ typedef Coordinate Delta;
 
 struct Coordinate
 {
+	// Big idea: reduce these to int8_t
 	int rank;
 	int file;
 
@@ -21,12 +22,12 @@ struct Coordinate
 	Coordinate() = default;
 	//Coordinate(const Coordinate&) = default;
 
-	inline bool isValid() const {return rank<8 && rank>=0 && file<8 && file>=0;};
+	inline bool isValid() const {return rank<8 && rank>=0 && file<8 && file>=0;}
 
 	// Useful for deltas
-	inline int infNorm() const {return std::max(std::abs(rank), std::abs(file));};
-	inline bool isStraight() const {return (rank == 0) != (file == 0);};
-	inline bool isDiagonal() const {return std::abs(rank) == std::abs(file);};
+	inline int infNorm() const {return std::max(std::abs(rank), std::abs(file));}
+	inline bool isStraight() const {return (rank == 0) != (file == 0);}
+	inline bool isDiagonal() const {return std::abs(rank) == std::abs(file);}
 	Delta step() const;
 
 	std::string toString() const;

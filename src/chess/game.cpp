@@ -2,6 +2,8 @@
 #include <map>
 #include <memory>
 #include <array>
+#include <stdexcept>
+#include <cassert>
 
 #include "states.h"
 #include "../game.h"
@@ -217,6 +219,9 @@ void genKnightMoves(Gamestate const* statep, Color c, Coordinate pos, std::uniqu
 
 }
 
+// genRookMoves
+// if file == 7, rank == startingrank -> kingside = false
+
 const std::map<Delta, unsigned int> kingMoveOrder {
 	{{ 1,  0}, 0},
 	{{ 1,  1}, 1},
@@ -234,6 +239,8 @@ void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, const
 		Coordinate target = pos + it->first;
 		if (!target.isValid())
 			continue;
+
+		//std::cerr << target.toString() << ": " << attackedSquares[it->second] << std::endl;
 
 		if (attackedSquares[it->second])
 			// Square is attacked by the opponent
@@ -269,6 +276,7 @@ AttackStatus checkAttack(const Board& b, const Coordinate& kingPos, const Coordi
 	// If the return-value is AttackStatus::PINNED, pinnedPos is set to the
 	// position of the pinned piece
 
+	assert((attackerPos-kingPos).isDiagonal() || (attackerPos-kingPos).isStraight());
 	// Assumes that kingPos and attackerPos are on the same diagonal/rank/file
 	Delta step {(attackerPos-kingPos).step()};
 
@@ -304,6 +312,14 @@ AttackStatus checkAttack(const Board& b, const Coordinate& kingPos, const Coordi
 
 void checkGuarded(const Board& b, const Coordinate& target, const Coordinate& kingPos, const Coordinate& attackerPos, std::array<bool, 8>& attackedSquares)
 {
+	/*
+	std::cerr << "Call to checkGuarded:\n"
+		<< "kingPos: " << kingPos.toString() << "\n"
+		<< "target: " << target.toString() << "\n"
+		<< "attackerPos: " << attackerPos.toString() << std::endl;
+	*/
+
+	assert((attackerPos-target).isDiagonal() || (attackerPos-target).isStraight());
 	// Assumes that target and attackerPos are on the same diagonal/rank/file
 	Delta step {(target-attackerPos).step()};
 
@@ -410,8 +426,10 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 					// New scope to not initialize any new variables in the switch
 					{
 						PieceType type = pieceType(p);
+
 						bool diag = delta.isDiagonal();
 						bool straight = delta.isStraight();
+
 						bool moveDiag = (type == BISHOP) || (type == QUEEN);
 						bool moveStraight = (type == ROOK) || (type == QUEEN);
 
@@ -448,17 +466,52 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 								}
 							}
 
-							/*
 							if (moveDiag) {
-								if (std::abs(delta.file) == 1) {
-									checkGuarded(statep->board, {kingPos.rank + delta.rank > 0 ? 1 : -1, kingPos.file - delta.file}, kingPos, {rank, file}, attackedSquares)
+								// Rank offset for the diagonal lines going through the attacking piece
+								// +file, +rank diagonal
+								int upwardOffset = delta.file - delta.rank;
+								// +file, -rank diagonal
+								int downwardOffset = -delta.file - delta.rank;
+
+								// The attacking line lies above the upward line through the king
+								bool aboveUpward = upwardOffset > 0;
+								// The attacking line lies above the downward line through the king
+								bool aboveDownward = downwardOffset > 0;
+
+								bool position = aboveUpward != aboveDownward;
+								int upwardSign = aboveUpward ? 1 : -1;
+								int downwardSign = aboveDownward ? 1 : -1;
+
+								// Lines guarding kingmoves have an offset of +-1 or +-2
+								// Lines with an offset of 0 are handled earlier by if (isLinedUp)
+								switch (std::abs(upwardOffset)) {
+									case 1:
+										// Target is the furthest of the two squares next to the king and in line with the attacker
+										checkGuarded(statep->board, kingPos + Coordinate{-downwardSign * position, -downwardSign * !position}, kingPos, {rank, file}, attackedSquares);
+										break;
+									case 2:
+										// Target is the square diagonal to the king and in line with the attacker
+										checkGuarded(statep->board, kingPos + Coordinate{upwardSign, -upwardSign}, kingPos, {rank, file}, attackedSquares);
+										break;
+									default:
+										// Line is too far away
+										break;
 								}
 
-								if (std::abs(delta.rank) == 1) {
-									checkGuarded(statep->board, {kingPos.rank - delta.rank, kingPos.file + delta.file > 0 ? 1 : -1}, kingPos, {rank, file}, attackedSquares)
+								switch (std::abs(downwardOffset)) {
+									case 1:
+										// Target is the furthest of the two squares next to the king and in line with the attacker
+										checkGuarded(statep->board, kingPos + Coordinate{downwardSign * position, downwardSign * !position}, kingPos, {rank, file}, attackedSquares);
+										break;
+									case 2:
+										// Target is the square diagonal to the king and in line with the attacker
+										checkGuarded(statep->board, kingPos + Coordinate{downwardSign, downwardSign}, kingPos, {rank, file}, attackedSquares);
+										break;
+									default:
+										// Line is too far away
+										break;
 								}
 							}
-							*/
 						}
 
 					}
@@ -476,6 +529,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 					}
 					break;
 				default:
+					throw std::invalid_argument("Invalid piece on board");
 					break;
 			}
 		}
@@ -521,7 +575,8 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 						genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);
 						break;
 					default:
-						continue;
+						throw std::invalid_argument("Invalid piece on board");
+						break;
 				}
 			}
 		}
