@@ -40,11 +40,19 @@ struct Coordinate
 
 	bool operator ==(const Coordinate& b) const;
 	bool operator !=(const Coordinate& b) const;
-
-	// For less<Coordinate>
-	bool operator <(const Coordinate& b) const;
 };
 
+namespace std
+{
+	template<> struct less<Delta>
+	{
+		bool operator() (const Delta& lhs, const Delta& rhs) const
+		{
+			// Orders Deltas with Linf < 16
+			return (32*lhs.rank + lhs.file) < (32*rhs.rank + rhs.file);
+		}
+	};
+}
 
 struct Castle
 {

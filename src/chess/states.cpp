@@ -94,12 +94,6 @@ bool Coordinate::operator !=(const Coordinate& b) const
 	return rank != b.rank || file != b.file;
 }
 
-bool Coordinate::operator <(const Coordinate& b) const
-{
-	// Random implementation used for less<Coordinate>
-	return (4*rank + file) < (4*b.rank + b.file);
-}
-
 Piece Board::get(Coordinate pos) const
 {
 	uint8_t elem = _board[(7 - pos.rank) * 4 + (pos.file >> 1)];	
