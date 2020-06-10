@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <string>
+#include <array>
 #include <iostream>
 
 struct Coordinate;
@@ -114,13 +115,6 @@ struct Board
 	void move(Coordinate from, Coordinate to);
 
 	void print(Color perspective=WHITE, bool colorTerminal=false, std::ostream& stream=std::cout);
-};
-
-enum class AttackStatus
-{
-	CLEAR,
-	ATTACKED,
-	PINNED
 };
 
 Coordinate findKing(const Board& b, Color c);

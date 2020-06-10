@@ -3,6 +3,7 @@
 #include "pieces.h"
 
 #include <string>
+#include <array>
 #include <cassert>
 
 // Construct a coordinate from its representation in standard algebraic notation
