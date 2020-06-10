@@ -5,64 +5,9 @@
 #include <stdexcept>
 #include <cassert>
 
+#include "board.h"
 #include "states.h"
 #include "../game.h"
-
-struct Line
-{
-	// Represents a line-segment on the board
-	Coordinate start;
-	Delta step;
-	int maxSteps;
-
-	Line(Coordinate start, Coordinate end)
-		: start{start}
-	{
-		// delta must be straight or diagonal
-		Delta delta {end-start};
-		maxSteps = delta.infNorm();
-		step = {delta.rank / maxSteps, delta.file/maxSteps};
-	}
-
-	bool contains(Coordinate pos) const
-	{
-		// Return true if pos is on the line, including the endpoint, but not including the start
-		Delta direction = pos - start;
-		int Linf = direction.infNorm();
-		// The inf-norm of the direction-vector corresponds to the required amount
-		// of steps of a step-vector with inf-norm 1
-		if (Linf > maxSteps || Linf == 0)
-			return false;
-
-		/* Missing check for paralellism
-		// Direction- and step- vector are colinear
-		return (
-			static_cast<float>(direction.rank)/step.rank ==
-			static_cast<float>(direction.file)/step.file
-		);
-		*/
-		// Scaled direction-vector matches step-vector
-		return (
-			static_cast<float>(direction.rank)/Linf == step.rank &&
-			static_cast<float>(direction.file)/Linf == step.file
-		);
-
-		/*
-		for (unsigned int i=0; i<=maxSteps; i++)
-			if (pos.rank == start.rank + step.rank * i &&
-				pos.file == start.file + step.file * i)
-				return true;
-		return false;
-		*/
-	}
-};
-
-enum class AttackStatus
-{
-	CLEAR,
-	ATTACKED,
-	PINNED
-};
 
 Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamestates)
 {
@@ -74,7 +19,9 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 	newstatep->whiteToMove = !newstatep->whiteToMove;
 
 	// Update en passant
-	newstatep->passantSquare = {-1, -1};
+	// This is probably faster than creating a new instance??
+	newstatep->passantSquare.rank = -1;
+	newstatep->passantSquare.file = -1;
 
 	// Update ply since capture/pawn move
 	newstatep->rule50Ply++;
@@ -82,7 +29,16 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 	return newstatep;
 }
 
-void genPawnMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, const std::map<Coordinate, Line>& pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genPawnMoves(
+	Gamestate const* statep,
+	Color c,
+	Coordinate pos,
+	std::unique_ptr<Coordinate>& mustKill,
+	std::unique_ptr<Line>& mustBlock,
+	const std::map<Coordinate, Line>& pinnedPositions,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
 {
 	int direction = pawnDirection(c);
 	Coordinate target;
@@ -202,8 +158,16 @@ const std::array<Delta, 8> knightMoves = {
 	Delta{ 2, -1}
 };
 
-
-void genKnightMoves(Gamestate const* statep, Color c, Coordinate pos, std::unique_ptr<Coordinate>& mustKill, std::unique_ptr<Line>& mustBlock, const std::map<Coordinate, Line>& pinnedPositions, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genKnightMoves(
+	Gamestate const* statep,
+	Color c,
+	Coordinate pos,
+	std::unique_ptr<Coordinate>& mustKill,
+	std::unique_ptr<Line>& mustBlock,
+	const std::map<Coordinate, Line>& pinnedPositions,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
 {
 	for (Coordinate offset : knightMoves) {
 		Coordinate target = pos + offset;
@@ -248,7 +212,14 @@ const std::map<Delta, unsigned int> kingMoveOrder {
 	{{ 1, -1}, 7}
 };
 
-void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, const std::array<bool, 8>& attackedSquares, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions)
+void genKingMoves(
+	Gamestate const* statep,
+	Color c,
+	const Coordinate& pos,
+	const std::array<bool, 8>& attackedSquares,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
 {
 	for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 		Coordinate target = pos + it->first;
@@ -284,7 +255,13 @@ void genKingMoves(Gamestate const* statep, Color c, const Coordinate& pos, const
 
 }
 
-AttackStatus checkAttack(const Board& b, const Coordinate& kingPos, const Coordinate& attackerPos, Color opponent, Coordinate& pinnedPos)
+AttackStatus checkAttack(
+	const Board& b,
+	const Coordinate& kingPos,
+	const Coordinate& attackerPos,
+	Color opponent,
+	Coordinate& pinnedPos
+)
 {
 	// Return the AttackStatus of the king at pos kingPos due to the enemy piece
 	// at pos attackerPos
@@ -325,7 +302,13 @@ AttackStatus checkAttack(const Board& b, const Coordinate& kingPos, const Coordi
 		return AttackStatus::ATTACKED;
 }
 
-void checkGuarded(const Board& b, const Coordinate& target, const Coordinate& kingPos, const Coordinate& attackerPos, std::array<bool, 8>& attackedSquares)
+void checkGuarded(
+	const Board& b,
+	const Coordinate& target,
+	const Coordinate& kingPos,
+	const Coordinate& attackerPos,
+	std::array<bool, 8>& attackedSquares
+)
 {
 	/*
 	std::cerr << "Call to checkGuarded:\n"
@@ -355,15 +338,16 @@ void checkGuarded(const Board& b, const Coordinate& target, const Coordinate& ki
 	attackedSquares[kingMoveOrder.at(target-kingPos)] = true;
 }
 
-void drawBoard(const Board&, Color, bool);
-
-bool gameOver(Gamestate const* statep);
-unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
-	// Both in stalemate and in mate no moves should be generated...
-	// Then the check for stalemate vs mate is a simple as seeing whether the king is in check
-	if (gameOver(statep)) {
+unsigned int getActions(
+	Gamestate const* statep,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
+{
+	// Both in stalemate and in mate no moves should be generated
+	if (statep->rule50Ply >= 150)
+		// Forced game end after 75 moves w/o captures/pawn moves
 		return 0;
-	}
 
 	Color toMove = statep->whiteToMove ? WHITE : BLACK;
 	Color opponent = opponentColor(toMove);
@@ -613,29 +597,3 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 
 	return actions.size();
 }
-
-float evaluation(Gamestate const* statep) {
-	return materialCount(statep->board);
-	for (int rank=0; rank<8; rank++) {
-		for (int file=0; file<8; file++) {
-			Piece p = statep->board.get({rank, file});
-			if (pieceType(p) == QUEEN) {
-				if (pieceColor(p) == WHITE)
-					return 100;
-				else
-					return -100;
-			}
-		}
-	}
-	return materialCount(statep->board);
-}
-
-bool gameOver(Gamestate const* statep)
-{
-	return std::abs(evaluation(statep)) == 100;
-
-	(void) statep;
-	//return won(statep) || drawn(statep);
-	return true;
-}
-

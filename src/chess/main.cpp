@@ -2,7 +2,6 @@
 #include <string>
 #include <stdexcept>
 
-#include "utils.h"
 #include "states.h"
 #include "../trees.h"
 #include "../game.h"
@@ -76,8 +75,8 @@ int test()
 
 		// Double en-passant
 		FEN = "5B2/6p1/8/4RP1k/4pK1N/6P1/4qP2/8 b - - 1 1";
-		FEN = "5B2/8/8/4RPpk/4pK1N/6P1/4qP2/8 w - g6 1 1";
-		FEN = "5B2/8/6P1/4R2k/4pK1N/6P1/4qP2/8 b - - 1 1";
+		//FEN = "5B2/8/8/4RPpk/4pK1N/6P1/4qP2/8 w - g6 1 1";
+		//FEN = "5B2/8/6P1/4R2k/4pK1N/6P1/4qP2/8 b - - 1 1";
 	}
 	try {
 		s = FEN;
@@ -88,11 +87,11 @@ int test()
 
 	std::cout << FEN << std::endl;
 	std::cout << s.toFEN() << std::endl;
-	drawBoard(s.board, WHITE, true);
+	s.board.print(WHITE, true);
 
 	Node *root = new Node{&s, nullptr, 0, nullptr};
 
-	std::cerr << "Current state:" << std::endl << sToString(root->state) << "\n" << std::endl;
+	std::cerr << "Current state:" << std::endl << root->state->toString() << "\n" << std::endl;
 
 	// The last move you should look at should be your opponents move
 	// Use even depths
@@ -103,7 +102,7 @@ int test()
 
 	std::cout << root->amtChildren << " valid move(s)" << std::endl;
 	for (unsigned int i=0; i<root->amtChildren; i++) {
-		std::cout << aToString(root->children[i]->action) << std::endl;
+		std::cout << root->children[i]->action->toString() << std::endl;
 	}
 	(void) e;
 	(void) player;
@@ -145,7 +144,7 @@ int play()
 
 	Node *root = new Node{sp, nullptr, 0, nullptr};
 
-	std::cerr << "Current state:" << std::endl << sToString(root->state) << "\n" << std::endl;
+	std::cerr << "Current state:" << std::endl << root->state->toString() << "\n" << std::endl;
 
 	unsigned int depth = 10;
 	bool player = false;
@@ -153,11 +152,11 @@ int play()
 
 	Evaluation e = bestAction(root, depth);
 	std::cout <<
-		"Best action is:\t" << aToString(e.action) << std::endl <<
+		"Best action is:\t" << e.action->toString() << std::endl <<
 		"Evaluation:\t" << e.evaluation << std::endl;
 
-	std::cout << sToString(root->state) << std::endl;
-	drawBoard(root->state->board, playerWhite ? WHITE : BLACK, true);
+	std::cout << root->state->toString() << std::endl;
+	root->state->board.print(playerWhite ? WHITE : BLACK, true);
 	while (!gameOver(root->state)) {
 		Node* nextRoot;
 		Action a{{0,0},{0,0}};
@@ -167,9 +166,9 @@ int play()
 		if (player && root->state->whiteToMove == playerWhite) {
 			// No input-validation
 			std::cin >> tmp;
-			Coordinate from = SAN2Coord(tmp);
+			Coordinate from = {tmp};
 			std::cin >> tmp;
-			Coordinate to = SAN2Coord(tmp);
+			Coordinate to = {tmp};
 			std::cin >> tmp;
 
 			if (tmp == "p") {
@@ -198,8 +197,8 @@ int play()
 
 		root = nextRoot;
 
-		std::cout << "\n" << sToString(root->state) << std::endl;
-		drawBoard(root->state->board, playerWhite ? WHITE : BLACK, true);
+		std::cout << "\n" << root->state->toString() << std::endl;
+		root->state->board.print(playerWhite ? WHITE : BLACK, true);
 	}
 	std::cout << e.evaluation << std::endl;
 	std::cout << evaluation(root->state) << std::endl;
