@@ -6,6 +6,7 @@
 
 #include <array>
 #include <map>
+#include <memory>
 
 enum class AttackStatus
 {
@@ -50,6 +51,26 @@ void checkGuarded(
 	const Coordinate& kingPos,
 	const Coordinate& attackerPos,
 	std::array<bool, 8>& attackedSquares
+);
+
+unsigned int getAttacks(
+	// Parameters
+	const Board& board,
+	const Coordinate& kingPos,
+	Color toMove,
+	// Output
+	// Bool array for the squares around the king
+	// Ordered according to kingMoveOrder
+	std::array<bool, 8>& attackedSquares,
+
+	// If there is an associated object, all valid moves must kill the piece at that pos
+	std::unique_ptr<Coordinate>& mustKill,
+
+	// If there is an associated object, all valid moves must move to that line
+	std::unique_ptr<Line>& mustBlock,
+
+	// Map from pinned postions to the line they are pinned on
+	std::map<Coordinate, Line>& pinnedPositions
 );
 
 #endif
