@@ -114,7 +114,7 @@ struct Board
 	void set(Coordinate pos, Piece piece);
 	void move(Coordinate from, Coordinate to);
 
-	void print(Color perspective=WHITE, bool colorTerminal=false, std::ostream& stream=std::cout);
+	void print(Color perspective=WHITE, bool colorTerminal=false, std::ostream& stream=std::cout) const;
 };
 
 Coordinate findKing(const Board& b, Color c);

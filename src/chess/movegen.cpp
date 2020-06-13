@@ -1,8 +1,11 @@
+//#define NDEBUG
+
 #include <cmath>
 #include <map>
 #include <memory>
 #include <array>
 #include <stdexcept>
+#include <cassert>
 
 #include "board.h"
 #include "states.h"
@@ -32,9 +35,9 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 void genPawnMoves(
 	Gamestate const* statep,
 	Color c,
-	Coordinate pos,
-	std::unique_ptr<Coordinate>& mustKill,
-	std::unique_ptr<Line>& mustBlock,
+	const Coordinate& pos,
+	const std::unique_ptr<Coordinate>& mustKill,
+	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
 	std::vector<Gamestate*>& gamestates,
 	std::vector<Action*>& actions
@@ -43,19 +46,21 @@ void genPawnMoves(
 	int direction = pawnDirection(c);
 	Coordinate target;
 	auto pinnedElement = pinnedPositions.find(pos);
+	bool isPinned = pinnedElement != pinnedPositions.end();
 
 	for (int side=-1; side<=1; side+=2) {
 		target = pos + Coordinate{direction, side};
 		if (!target.isValid())
 			continue;
 
-		if (pinnedElement != pinnedPositions.end() && !pinnedElement->second.contains(target))
+		if (isPinned && !pinnedElement->second.contains(target))
 			continue;
 
 		Piece targetPiece = statep->board.get(target);
 
 		if (pieceColor(targetPiece) == opponentColor(c) && targetPiece != NONE) {
 			// Attack a piece
+			assert(pieceType(targetPiece) != KING);
 			if (mustKill && target != *mustKill)
 				continue;
 			if (mustBlock && !mustBlock->contains(target))
@@ -101,7 +106,7 @@ void genPawnMoves(
 		if (mustKill)
 			return;
 
-		if (pinnedElement != pinnedPositions.end() && !pinnedElement->second.contains(target))
+		if (isPinned && !pinnedElement->second.contains(target))
 			// If moving 1 step breaks the pin, so will moving 2 steps
 			return;
 
@@ -129,8 +134,8 @@ void genPawnMoves(
 		}
 
 		if (pos.rank == (c == WHITE ? 1 : 6)) {
+			target = pos + Coordinate{2*direction, 0};
 			if (!mustBlock || mustBlock->contains(target)) {
-				target = pos + Coordinate{2*direction, 0};
 				if (statep->board.get(target) == NONE) {
 					// Move two steps
 					actions.push_back(new Action{pos, target});
@@ -149,14 +154,16 @@ void genPawnMoves(
 void genKnightMoves(
 	Gamestate const* statep,
 	Color c,
-	Coordinate pos,
-	std::unique_ptr<Coordinate>& mustKill,
-	std::unique_ptr<Line>& mustBlock,
+	const Coordinate& pos,
+	const std::unique_ptr<Coordinate>& mustKill,
+	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
 	std::vector<Gamestate*>& gamestates,
 	std::vector<Action*>& actions
 )
 {
+	auto pinnedElement = pinnedPositions.find(pos);
+	bool isPinned = pinnedElement != pinnedPositions.end();
 	for (Coordinate offset : knightMoves) {
 		Coordinate target = pos + offset;
 		if (!target.isValid())
@@ -166,13 +173,13 @@ void genKnightMoves(
 		if (mustBlock && !mustBlock->contains(target))
 			continue;
 
-		auto it = pinnedPositions.find(pos);
-		if (it != pinnedPositions.end() && !it->second.contains(target))
+		if (isPinned && !pinnedElement->second.contains(target))
 			continue;
 
 		Piece targetPiece = statep->board.get(target);
 		// Empty squares are black, but this does not matter in this case
 		if (targetPiece == NONE || pieceColor(targetPiece) != c) {
+			assert(pieceType(targetPiece) != KING);
 			// Move or attack
 			actions.push_back(new Action{pos, target});
 
@@ -186,8 +193,175 @@ void genKnightMoves(
 
 }
 
-// genRookMoves
-// if file == 7, rank == startingrank -> kingside = false
+void genBishopMoves(
+	Gamestate const* statep,
+	Color c,
+	const Coordinate& pos,
+	const std::unique_ptr<Coordinate>& mustKill,
+	const std::unique_ptr<Line>& mustBlock,
+	const std::map<Coordinate, Line>& pinnedPositions,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
+{
+	auto pinnedElement = pinnedPositions.find(pos);
+	bool isPinned = pinnedElement != pinnedPositions.end();
+
+#if 0
+	// Not sure I want these
+	if (mustKill && !(*mustKill - pos).isDiagonal())
+		return;
+	if (isPinned && !pinnedElement->second.step.isDiagonal())
+		return;
+
+#endif
+	for (int rankDirection=-1; rankDirection<=1; rankDirection+=2) {
+		for (int fileDirection=-1; fileDirection<=1; fileDirection+=2) {
+			Delta step {rankDirection, fileDirection};
+			for (Coordinate target {pos.rank + step.rank, pos.file + step.file}; target.isValid(); target += step) {
+				bool cantMove = (mustKill && target != *mustKill) ||
+					(mustBlock && !mustBlock->contains(target)) ||
+					(isPinned && !pinnedElement->second.contains(target));
+
+				Piece targetPiece = statep->board.get(target);
+				// Empty squares are black, but this does not matter in this case
+				if (targetPiece == NONE) {
+					if (cantMove)
+						continue;
+					// Move
+					actions.push_back(new Action{pos, target});
+
+					Gamestate* newstatep = createState(statep, gamestates);
+					newstatep->board.move(pos, target);
+				} else if (pieceColor(targetPiece) != c) {
+					//std::cerr << statep->toString() << std::endl;
+					assert(pieceType(targetPiece) != KING);
+					if (!cantMove) {
+						// Attack
+						actions.push_back(new Action{pos, target});
+
+						Gamestate* newstatep = createState(statep, gamestates);
+						newstatep->board.move(pos, target);
+						// Capture
+						newstatep->rule50Ply = 0;
+					}
+
+					// Blocked by enemy piece, can't move further in this direction
+					break;
+				} else {
+					// Blocked by friendly piece, can't move further in this direction
+					break;
+				}
+			}
+		}
+	}
+}
+
+void setCastle(Gamestate* statep, Color c, const Coordinate& pos)
+{
+	// Assumes the rook is on its starting rank
+	assert(pos.rank == (c == WHITE ? 0 : 7));
+	// Unset queen-/kingside castling-rights if departing from a or h
+	switch (pos.file) {
+		case 0:
+			(c == WHITE ? statep->whiteCastle : statep->blackCastle).queenside = false;
+			break;
+		case 7:
+			(c == WHITE ? statep->whiteCastle : statep->blackCastle).kingside = false;
+			break;
+		default:
+			break;
+	}
+}
+
+void genRookMoves(
+	Gamestate const* statep,
+	Color c,
+	const Coordinate& pos,
+	const std::unique_ptr<Coordinate>& mustKill,
+	const std::unique_ptr<Line>& mustBlock,
+	const std::map<Coordinate, Line>& pinnedPositions,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
+{
+	auto pinnedElement = pinnedPositions.find(pos);
+	bool isPinned = pinnedElement != pinnedPositions.end();
+
+	int homeRank = c == WHITE ? 0 : 7;
+
+#if 0
+	// Not sure I want these
+	if (mustKill && !(*mustKill - pos).isStraight())
+		return;
+	if (isPinned && !pinnedElement->second.step.isStraight())
+		return;
+
+#endif
+	// Whether to move in rank or file
+	for (int rank=0; rank<=1; rank++) {
+		for (int direction=-1; direction<=1; direction+=2) {
+			Delta step {rank*direction, (!rank)*direction};
+			for (Coordinate target {pos.rank + step.rank, pos.file + step.file}; target.isValid(); target += step) {
+				bool cantMove = (mustKill && target != *mustKill) ||
+					(mustBlock && !mustBlock->contains(target)) ||
+					(isPinned && !pinnedElement->second.contains(target));
+
+				Piece targetPiece = statep->board.get(target);
+				// Empty squares are black, but this does not matter in this case
+				if (targetPiece == NONE) {
+					if (cantMove)
+						continue;
+					// Move
+					actions.push_back(new Action{pos, target});
+
+					Gamestate* newstatep = createState(statep, gamestates);
+					newstatep->board.move(pos, target);
+					if (pos.rank == homeRank)
+						// Unset castling avaliability
+						setCastle(newstatep, c, pos);
+
+				} else if (pieceColor(targetPiece) != c) {
+					assert(pieceType(targetPiece) != KING);
+					if (!cantMove) {
+						// Attack
+						actions.push_back(new Action{pos, target});
+
+						Gamestate* newstatep = createState(statep, gamestates);
+						newstatep->board.move(pos, target);
+						// Capture
+						newstatep->rule50Ply = 0;
+
+						if (pos.rank == homeRank)
+							// Unset castling avaliability
+							setCastle(newstatep, c, pos);
+					}
+
+					// Blocked by enemy piece, can't move further in this direction
+					break;
+				} else {
+					// Blocked by friendly piece, can't move further in this direction
+					break;
+				}
+			}
+		}
+	}
+}
+
+void genQueenMoves(
+	Gamestate const* statep,
+	Color c,
+	const Coordinate& pos,
+	const std::unique_ptr<Coordinate>& mustKill,
+	const std::unique_ptr<Line>& mustBlock,
+	const std::map<Coordinate, Line>& pinnedPositions,
+	std::vector<Gamestate*>& gamestates,
+	std::vector<Action*>& actions
+)
+{
+	genBishopMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+	genRookMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+}
 
 void genKingMoves(
 	Gamestate const* statep,
@@ -277,19 +451,6 @@ unsigned int getActions(
 		for (int file=0; file<8; file++) {
 			Piece p = statep->board.get({rank, file});
 			if (p != NONE && pieceColor(p) == toMove) {
-				// Must keep blocking (same as above?)
-				// 	If you are on a line, you must stay on that line
-				// 	If not - see above
-				// 	Any piece
-
-				// One of
-				// 	Must kill - target = target, but keep en passant in mind
-				// 	Either pawns or knight
-
-				// 	Must block
-				// 	Bishops, rooks, queens
-
-
 				switch (pieceType(p)) {
 					case PAWN:
 						genPawnMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
@@ -298,10 +459,13 @@ unsigned int getActions(
 						genKnightMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
 						break;
 					case BISHOP:
+						genBishopMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
 						break;
 					case ROOK:
+						genRookMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
 						break;
 					case QUEEN:
+						genQueenMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
 						break;
 					case KING:
 						genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);

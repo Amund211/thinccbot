@@ -3,10 +3,10 @@
 #include <stdexcept>
 
 #include "states.h"
+#include "evaluation.h"
 #include "../trees.h"
-#include "../game.h"
 
-constexpr bool TEST = true;
+constexpr bool TEST = false;
 
 int test()
 {
@@ -75,8 +75,23 @@ int test()
 
 		// Double en-passant
 		FEN = "5B2/6p1/8/4RP1k/4pK1N/6P1/4qP2/8 b - - 1 1";
-		//FEN = "5B2/8/8/4RPpk/4pK1N/6P1/4qP2/8 w - g6 1 1";
+		FEN = "5B2/8/8/4RPpk/4pK1N/6P1/4qP2/8 w - g6 1 1";
 		//FEN = "5B2/8/6P1/4R2k/4pK1N/6P1/4qP2/8 b - - 1 1";
+
+		FEN = "4q1k1/p5b1/6pp/Rpr1Pp2/2p1bB1N/8/P4PPP/3QR1K1 b - - 3 1";
+		FEN = "6k1/p5b1/2q3pp/Rpr1Pp2/2p2B1N/8/P4PbP/3QR2K w - - 3 1";
+		FEN = "6k1/p5b1/2b3pp/Rpr1Pp2/2p2B1N/8/P4PbP/3QR2K w - - 3 1";
+		FEN = "3q2k1/p5b1/7p/Rp1rPp2/2p2p1N/3b1P2/P2Q2PP/2R3K1 b - - 4 1";
+		//FEN = "3q4/p3k1b1/6Np/Rp1rPp2/2p2p2/3b1P2/P2Q2PP/2R3K1 w - - 7 1";
+		FEN = "3q4/p4kb1/6Np/Rp1rPp2/2p2p2/3b1P2/P2Q2PP/2R3K1 b - - 4 1";
+		FEN = "3q1k2/p5b1/6Np/Rp1rPp2/2p2p2/3b1P2/P2Q2PP/2R3K1 b - - 4 1";
+		FEN = "4q1k1/5Qb1/7p/Rp1rPp2/4bp1N/2p5/P4PPP/4R2K b - - 1 1";
+		FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1B1q/2N2PP1/PPP1P2P/R3KBNR b Kkq - 0 1";
+
+		FEN = "rnbqkbnr/5ppp/1p1pp3/p7/3Q1B2/2N5/PPP1PPPP/R3KBNR w Kkq - 0 1";
+		FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1BPq/2N5/PPP1PP1P/R3KBNR w Kkq - 0 1";
+		FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1B1q/2N2P2/PPP1P1PP/R3KBNR w Kkq - 0 1";
+		//FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1BPq/2N2P2/PPP1P2P/R3KBNR b Kkq g3 0 1";
 	}
 	try {
 		s = FEN;
@@ -93,8 +108,6 @@ int test()
 
 	std::cerr << "Current state:" << std::endl << root->state->toString() << "\n" << std::endl;
 
-	// The last move you should look at should be your opponents move
-	// Use even depths
 	unsigned int depth = 1;
 	bool player = true;
 
@@ -110,8 +123,6 @@ int test()
 	return 0;
 }
 
-
-bool gameOver(Gamestate const*);
 
 int play()
 {
@@ -132,9 +143,29 @@ int play()
 
 	FEN = "4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 1 1";
 
-	FEN = "k7/8/8/8/8/1p5P/8/K7 w - - 1 1";
-
 	//FEN = "k7/8/8/8/8/7P/1p6/K7 b - - 1 1";
+	FEN = "k7/8/8/8/8/1p5P/8/K7 w - - 1 1";
+	FEN = "8/7P/8/8/8/8/K7/3k4 w - - 140 1";
+	FEN = "7Q/8/8/8/8/8/8/K3k3 b - - 142 1";
+	FEN = "3k4/7R/3K4/8/8/8/8/8 b - - 140 1";
+
+	FEN = "4q1k1/p5b1/1p4pp/nRr1Pp2/Q1p2B2/3b1N2/P4PPP/4R1K1 w - - 2 26";
+	// Both err
+	FEN = "4q1k1/p5b1/6pp/Rpr1Pp2/2p1bB1N/8/P4PPP/3QR1K1 b - - 3 1";
+	FEN = "3q1k2/p5b1/6Np/Rp1rPp2/2p2p2/3b1P2/P2Q2PP/2R3K1 b - - 4 1";
+
+	FEN = STARTING_FEN;
+	FEN = "1nb1kbnr/r1pp1ppp/pp2pq2/8/3P1B2/3BPN2/PPP2PPP/RN1QK2R w KQk - 4 1";
+	FEN = "1nb1kbnr/r1pp1pp1/pp2p2p/6N1/3P4/3BP3/PPP2PPP/RN1QK2R w KQk - 0 1";
+	FEN = "1nb1k1n1/3p1p2/4p1p1/1pP4r/3P4/p3PP2/2P1K2P/1Q5R w - - 0 1";
+	FEN = "Q1bk2n1/3p1p2/3R2p1/1pP2n2/8/4PPK1/2r5/8 w - - 3 1";
+
+	FEN = "1nb1kbnr/r1pp1ppp/pp2pq2/6B1/3P4/3BPN2/PPP2PPP/RN1QK2R b KQk - 5 1";
+	FEN = STARTING_FEN;
+	FEN = "1nb1kbnr/5p2/1prpp1pp/p7/2NP4/2PB1N2/PP3PPP/R2QK2R w KQk - 2 1";
+	FEN = "1nb1kbnr/5p2/1prpp2p/p7/2NP2p1/1QPB1N2/PP1K1PPP/R6R w k - 0 1";
+	FEN = "3k2nr/3b1p2/3p3b/p1rNn2p/5QpN/1BP5/PP1K1PPP/R6R w - - 11 1";
+
 	try {
 		sp = new Gamestate {FEN};
 	} catch (const std::invalid_argument& ia) {
@@ -144,26 +175,25 @@ int play()
 
 	Node *root = new Node{sp, nullptr, 0, nullptr};
 
-	std::cerr << "Current state:" << std::endl << root->state->toString() << "\n" << std::endl;
-
-	unsigned int depth = 10;
-	bool player = false;
+	unsigned int depth = 5;
+	bool player = true;
 	bool playerWhite = true;
 
-	Evaluation e = bestAction(root, depth);
-	std::cout <<
-		"Best action is:\t" << e.action->toString() << std::endl <<
-		"Evaluation:\t" << e.evaluation << std::endl;
+	Evaluation e;
 
-	std::cout << root->state->toString() << std::endl;
-	root->state->board.print(playerWhite ? WHITE : BLACK, true);
 	while (!gameOver(root->state)) {
 		Node* nextRoot;
 		Action a{{0,0},{0,0}};
 		std::string tmp;
 
-		std::cout << "Current state evaluation:\t" << evaluation(root->state) << std::endl;
+		// Print state
+		std::cout << root->state->toString() << std::endl;
+		root->state->board.print(playerWhite ? WHITE : BLACK, true);
+		std::cout << "State evaluation:\t" << evaluation(root->state) << std::endl;
+
 		if (player && root->state->whiteToMove == playerWhite) {
+			// Generate child-nodes
+			genChildren(root);
 			// No input-validation
 			std::cin >> tmp;
 			Coordinate from = {tmp};
@@ -180,7 +210,8 @@ int play()
 		} else {
 			e = bestAction(root, depth);
 			a = *e.action;
-			std::cout << "Node evaluation:\t" << e.evaluation << std::endl;
+			std::cout << "Node evaluation:\t" << (root->state->whiteToMove ? 1 : -1) * e.evaluation << std::endl;
+			std::cout << "Computer plays:\t" << e.action->toString() << std::endl;
 		}
 
 		// Find the corresponding child-node
@@ -196,10 +227,13 @@ int play()
 		delete root;
 
 		root = nextRoot;
-
-		std::cout << "\n" << root->state->toString() << std::endl;
-		root->state->board.print(playerWhite ? WHITE : BLACK, true);
+		std::cout << "\n";
 	}
+
+	// Print terminal state
+	std::cout << root->state->toString() << std::endl;
+	root->state->board.print(playerWhite ? WHITE : BLACK, true);
+
 	std::cout << e.evaluation << std::endl;
 	std::cout << evaluation(root->state) << std::endl;
 

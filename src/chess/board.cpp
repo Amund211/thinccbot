@@ -1,9 +1,12 @@
+//#define NDEBUG
+
 #include "board.h"
 
 #include "pieces.h"
 
 #include <string>
 #include <array>
+#include <iostream>
 #include <cassert>
 
 // Construct a coordinate from its representation in standard algebraic notation
@@ -106,7 +109,7 @@ void Board::move(Coordinate from, Coordinate to)
 	set(from, NONE);
 }
 
-void Board::print(Color perspective, bool colorTerminal, std::ostream& stream)
+void Board::print(Color perspective, bool colorTerminal, std::ostream& stream) const
 {
 	int topRank, leftFile, rankDirection;
 	if (perspective == WHITE) {
@@ -155,6 +158,6 @@ Coordinate findKing(const Board& b, Color c)
 		}
 	}
 
-	//b.print(WHITE, true);
+	b.print(WHITE, true, std::cerr);
 	throw std::invalid_argument("Board does not have a king of the given color");
 }

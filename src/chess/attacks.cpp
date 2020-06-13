@@ -1,3 +1,5 @@
+//#define NDEBUG
+
 #include "attacks.h"
 
 #include "pieces.h"
@@ -12,7 +14,8 @@ AttackStatus checkAttack(
 	const Coordinate& kingPos,
 	const Coordinate& attackerPos,
 	Color opponent,
-	Coordinate& pinnedPos
+	Coordinate& pinnedPos,
+	std::array<bool, 8>& attackedSquares
 )
 {
 	// Return the AttackStatus of the king at pos kingPos due to the enemy piece
@@ -32,6 +35,11 @@ AttackStatus checkAttack(
 		if (pieceType(tmpPiece) != NONE) {
 			if (pieceColor(tmpPiece) == opponent) {
 				// An opposing piece is blocking
+				// We can't capture this piece with our king, since it's defended
+				if ((cur-kingPos).infNorm() == 1)
+					// kingPos -> cur is a valid kingmove
+					attackedSquares[kingMoveOrder.at((cur-kingPos).step())] = true;
+
 				// We are free to move any piece off the line
 				return AttackStatus::CLEAR;
 			} else {
@@ -47,11 +55,18 @@ AttackStatus checkAttack(
 		}
 	}
 
-	if (blocked)
+	if (blocked) {
 		// Exactly one friendly blocker and no hostile blockers
 		return AttackStatus::PINNED;
-	else
+	} else {
+		// King can't move away from this attacker
+		attackedSquares[kingMoveOrder.at(-step)] = true;
+
+		if (kingPos + step != attackerPos)
+			// King can't move towards his attacker if he can't capture it
+			attackedSquares[kingMoveOrder.at(step)] = true;
 		return AttackStatus::ATTACKED;
+	}
 }
 
 void checkGuarded(
@@ -148,7 +163,8 @@ unsigned int getAttacks(
 						if (!amtChecks)
 							mustKill = std::make_unique<Coordinate>(rank, file);
 						amtChecks++;
-					} else {
+					}
+					if (std::abs(delta.rank) <= 3 && std::abs(delta.file) <= 3) {
 						// Check if the knight is guarding any squares next to the king
 						for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 							Delta guardTarget = delta + it->first;
@@ -174,7 +190,7 @@ unsigned int getAttacks(
 						bool isLinedUp = (diag && moveDiag) || (straight && moveStraight);
 
 						if (isLinedUp) {
-							AttackStatus status = checkAttack(board, kingPos, {rank, file}, opponent, pinnedPos);
+							AttackStatus status = checkAttack(board, kingPos, {rank, file}, opponent, pinnedPos, attackedSquares);
 							switch (status) {
 								case AttackStatus::CLEAR:
 									break;
@@ -182,16 +198,6 @@ unsigned int getAttacks(
 									if (!amtChecks)
 										mustBlock = std::make_unique<Line>(kingPos, Coordinate{rank, file});
 									amtChecks++;
-
-									{
-										Delta s {delta.step()};
-										// King can't move away from this attacker
-										attackedSquares[kingMoveOrder.at(s)] = true;
-
-										if (rank + s.rank != kingPos.rank || file + s.file != kingPos.file)
-											// King can't move towards from his attacker if he can't capture it
-											attackedSquares[kingMoveOrder.at(-s)] = true;
-									}
 									break;
 								case AttackStatus::PINNED:
 									pinnedPositions.emplace(pinnedPos, Line{kingPos, {rank, file}});

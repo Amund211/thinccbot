@@ -42,7 +42,8 @@ AttackStatus checkAttack(
 	const Coordinate& kingPos,
 	const Coordinate& attackerPos,
 	Color opponent,
-	Coordinate& pinnedPos
+	Coordinate& pinnedPos,
+	std::array<bool, 8>& attackedSquares
 );
 
 void checkGuarded(
