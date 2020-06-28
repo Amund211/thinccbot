@@ -367,11 +367,17 @@ void genKingMoves(
 	Gamestate const* statep,
 	Color c,
 	const Coordinate& pos,
-	const std::array<bool, 8>& attackedSquares,
+	const std::array<bool, 10>& attackedSquares,
+	bool inCheck,
 	std::vector<Gamestate*>& gamestates,
 	std::vector<Action*>& actions
 )
 {
+	const Castle& myCastle = (c == WHITE ? statep->whiteCastle : statep->blackCastle);
+	bool mayCastle = !inCheck &&
+		pos.file == 4 &&
+		(pos.rank == (c == WHITE ? 0 : 7));
+
 	for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 		Coordinate target = pos + it->first;
 		if (!target.isValid())
@@ -384,8 +390,58 @@ void genKingMoves(
 			continue;
 
 		Piece targetPiece = statep->board.get(target);
+
+		if (std::abs(it->first.file) == 2) {
+			// Castle
+			if (it->first.file < 0) {
+				// Queenside
+				if (
+					mayCastle &&
+					myCastle.queenside &&
+					statep->board.get(target) == NONE &&
+					statep->board.get(target + Coordinate{0, 1}) == NONE &&
+					statep->board.get(target - Coordinate{0, 1}) == NONE &&
+					!attackedSquares[kingMoveOrder.find({0, 1})->second]
+				) {
+					actions.push_back(new Action{pos, target});
+
+					Gamestate* newstatep = createState(statep, gamestates);
+					// Move the king
+					newstatep->board.move(pos, target);
+					// Move the rook
+					newstatep->board.move({(c == WHITE ? 0 : 7), 0}, target + Coordinate{0, 1});
+
+					if (c == WHITE)
+						newstatep->whiteCastle = {false, false};
+					else
+						newstatep->blackCastle = {false, false};
+				}
+
+			} else {
+				// Kingside
+				if (
+					mayCastle &&
+					myCastle.kingside &&
+					statep->board.get(target) == NONE &&
+					statep->board.get(target + Coordinate{0, -1}) == NONE &&
+					!attackedSquares[kingMoveOrder.find({0, -1})->second]
+				) {
+					actions.push_back(new Action{pos, target});
+
+					Gamestate* newstatep = createState(statep, gamestates);
+					// Move the king
+					newstatep->board.move(pos, target);
+					// Move the rook
+					newstatep->board.move({(c == WHITE ? 0 : 7), 7}, target - Coordinate{0, 1});
+
+					if (c == WHITE)
+						newstatep->whiteCastle = {false, false};
+					else
+						newstatep->blackCastle = {false, false};
+				}
+			}
 		// Empty squares are black, but this does not matter in this case
-		if (targetPiece == NONE || pieceColor(targetPiece) != c) {
+		} else if (targetPiece == NONE || pieceColor(targetPiece) != c) {
 			// Move or attack
 			actions.push_back(new Action{pos, target});
 
@@ -420,8 +476,8 @@ unsigned int getActions(
 	Color toMove = statep->whiteToMove ? WHITE : BLACK;
 	Coordinate kingPos = findKing(statep->board, toMove);
 
-	std::array<bool, 8> attackedSquares = {
-		false, false, false, false, false, false, false, false
+	std::array<bool, 10> attackedSquares = {
+		false, false, false, false, false, false, false, false, false, false
 	};
 	std::unique_ptr<Coordinate> mustKill;
 	std::unique_ptr<Line> mustBlock;
@@ -443,7 +499,7 @@ unsigned int getActions(
 
 	// 2+ attackers -> only king-moves can get out of check
 	if (amtChecks >= 2) {
-		genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);
+		genKingMoves(statep, toMove, kingPos, attackedSquares, true, gamestates, actions);
 		return actions.size();
 	}
 
@@ -468,7 +524,7 @@ unsigned int getActions(
 						genQueenMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
 						break;
 					case KING:
-						genKingMoves(statep, toMove, kingPos, attackedSquares, gamestates, actions);
+						genKingMoves(statep, toMove, kingPos, attackedSquares, amtChecks != 0, gamestates, actions);
 						break;
 					default:
 						throw std::invalid_argument("Invalid piece on board");

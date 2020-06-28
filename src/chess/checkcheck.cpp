@@ -229,7 +229,7 @@ bool hasKingMove(
 	Gamestate const* statep,
 	Color c,
 	const Coordinate& pos,
-	const std::array<bool, 8>& attackedSquares
+	const std::array<bool, 10>& attackedSquares
 )
 {
 	for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
@@ -239,6 +239,11 @@ bool hasKingMove(
 
 		if (attackedSquares[it->second])
 			// Square is attacked by the opponent
+			continue;
+
+		if (std::abs(it->first.file) == 2)
+			// If you can castle you can also just move one square
+			// in that direction
 			continue;
 
 		Piece targetPiece = statep->board.get(target);
@@ -265,8 +270,8 @@ GameStatus getGameStatus(Gamestate const* statep)
 	Color toMove = statep->whiteToMove ? WHITE : BLACK;
 	Coordinate kingPos = findKing(statep->board, toMove);
 
-	std::array<bool, 8> attackedSquares = {
-		false, false, false, false, false, false, false, false
+	std::array<bool, 10> attackedSquares = {
+		false, false, false, false, false, false, false, false, false, false
 	};
 	std::unique_ptr<Coordinate> mustKill;
 	std::unique_ptr<Line> mustBlock;

@@ -29,7 +29,7 @@ struct Coordinate
 	// Useful for deltas
 	inline int infNorm() const {return std::max(std::abs(rank), std::abs(file));}
 	inline bool isStraight() const {return (rank == 0) != (file == 0);}
-	inline bool isDiagonal() const {return std::abs(rank) == std::abs(file);}
+	inline bool isDiagonal() const {return rank != 0 && std::abs(rank) == std::abs(file);}
 	Delta step() const;
 
 	std::string toSAN() const;

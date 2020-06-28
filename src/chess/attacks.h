@@ -34,7 +34,10 @@ const std::map<Delta, unsigned int> kingMoveOrder {
 	{{-1,  0}, 4},
 	{{-1, -1}, 5},
 	{{ 0, -1}, 6},
-	{{ 1, -1}, 7}
+	{{ 1, -1}, 7},
+	// Castling
+	{{ 0, -2}, 8},
+	{{ 0,  2}, 9}
 };
 
 AttackStatus checkAttack(
@@ -43,7 +46,7 @@ AttackStatus checkAttack(
 	const Coordinate& attackerPos,
 	Color opponent,
 	Coordinate& pinnedPos,
-	std::array<bool, 8>& attackedSquares
+	std::array<bool, 10>& attackedSquares
 );
 
 void checkGuarded(
@@ -51,7 +54,7 @@ void checkGuarded(
 	const Coordinate& target,
 	const Coordinate& kingPos,
 	const Coordinate& attackerPos,
-	std::array<bool, 8>& attackedSquares
+	std::array<bool, 10>& attackedSquares
 );
 
 unsigned int getAttacks(
@@ -62,7 +65,7 @@ unsigned int getAttacks(
 	// Output
 	// Bool array for the squares around the king
 	// Ordered according to kingMoveOrder
-	std::array<bool, 8>& attackedSquares,
+	std::array<bool, 10>& attackedSquares,
 
 	// If there is an associated object, all valid moves must kill the piece at that pos
 	std::unique_ptr<Coordinate>& mustKill,

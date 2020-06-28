@@ -92,6 +92,21 @@ int test()
 		FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1BPq/2N5/PPP1PP1P/R3KBNR w Kkq - 0 1";
 		FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1B1q/2N2P2/PPP1P1PP/R3KBNR w Kkq - 0 1";
 		//FEN = "rnb1kbnr/5ppp/1p1pp3/p7/3Q1BPq/2N2P2/PPP1P2P/R3KBNR b Kkq g3 0 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PPP2PPP/RN1QK2R b KQk - 3 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/1q1P1B2/3BPN2/PPP2PPP/RN1QK2R w KQk - 3 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PqP2PPP/R3K2R w KQk - 3 1";
+		//FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/1q1P1B2/3BPN2/PPP2PPP/R3K2R w KQk - 3 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PqPK1PPP/R6R b KQk - 3 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/q2BPN2/P1PK1PPP/R6R w KQk - 3 1";
+
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PPP2PPP/RN1QK2R b KQk - 3 1";
+		FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PPP2PPq/RN1QK2R w KQk - 3 1";
+		FEN = "k7/8/8/8/8/8/6Pq/4K2R w KQk - 3 1";
+		//FEN = "4k3/8/8/8/8/8/7q/R3K2R w KQk - 3 1";
+		//FEN = "4k3/8/8/8/8/8/7q/13K21 w KQk - 3 1";
+		//FEN = "4k3/8/8/8/8/8/7r/13K21 w KQk - 3 1";
+		//FEN = "4k3/8/8/8/8/8/7b/13K21 w KQk - 3 1";
+		//FEN = "4k3/8/8/8/8/8/8/R3K2R w KQk - 3 1";
 	}
 	try {
 		s = FEN;
@@ -164,7 +179,15 @@ int play()
 	FEN = STARTING_FEN;
 	FEN = "1nb1kbnr/5p2/1prpp1pp/p7/2NP4/2PB1N2/PP3PPP/R2QK2R w KQk - 2 1";
 	FEN = "1nb1kbnr/5p2/1prpp2p/p7/2NP2p1/1QPB1N2/PP1K1PPP/R6R w k - 0 1";
+	// Played with black as computer
+	// Black trades queen for bishop early on, otherwise decent play
 	FEN = "3k2nr/3b1p2/3p3b/p1rNn2p/5QpN/1BP5/PP1K1PPP/R6R w - - 11 1";
+	FEN = STARTING_FEN;
+	FEN = "1nbqkbnr/r1pp1ppp/pp2p3/8/3P1B2/3BPN2/PPP2PPP/RN1QK2R b KQk - 3 1";
+	FEN = STARTING_FEN;
+	FEN = "5k1r/1bQRbp2/1pN5/7p/1P6/4P1P1/5PP1/6K1 w - - 1 1";
+	FEN = STARTING_FEN;
+	FEN = "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6";
 
 	try {
 		sp = new Gamestate {FEN};
@@ -176,7 +199,7 @@ int play()
 	Node *root = new Node{sp, nullptr, 0, nullptr};
 
 	unsigned int depth = 5;
-	bool player = true;
+	bool player = false;
 	bool playerWhite = true;
 
 	Evaluation e;
