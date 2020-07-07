@@ -73,13 +73,18 @@ Evaluation bestAction(Node* nodep, unsigned int depth)
 
 float negamax(Node* nodep, unsigned int depth, float alpha, float beta)
 {
-	// Generate children of node
-	genChildren(nodep);
-
-	if (depth == 0 || nodep->amtChildren == 0) {
+	if (depth == 0 || (genChildren(nodep), nodep->amtChildren == 0)) {
+		float eval = evaluation(nodep->state);
+		// Weigh won/lost nodes by distance to emulate human play
 		// Gamestates must store `bool whiteToMove` as their first member
-		return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * evaluation(nodep->state);
+		if (eval == 100)
+			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * (eval + depth);
+		else if (eval == -100)
+			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * (eval - depth);
+		else
+			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * eval;
 	}
+
 	float value = -INFINITY;
 	for (unsigned int i=0; i<nodep->amtChildren; i++) {
 		value = std::max(value, -negamax(nodep->children[i], depth - 1, -beta, -alpha));
