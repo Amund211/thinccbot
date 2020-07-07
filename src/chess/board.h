@@ -7,6 +7,7 @@
 #include <string>
 #include <array>
 #include <iostream>
+#include <cassert>
 
 struct Coordinate;
 // Alias for Coordinate
@@ -14,15 +15,12 @@ typedef Coordinate Delta;
 
 struct Coordinate
 {
-	// Big idea: reduce these to int8_t
 	int rank;
 	int file;
 
-	//inline unsigned int toOffset() const { return rank*8 + file; };
 	Coordinate(int rank, int file): rank{rank}, file{file} {}
 	Coordinate(std::string SAN);
 	Coordinate() = default;
-	//Coordinate(const Coordinate&) = default;
 
 	inline bool isValid() const {return rank<8 && rank>=0 && file<8 && file>=0;}
 
@@ -67,8 +65,10 @@ struct Line
 	Line(Coordinate start, Coordinate end)
 		: start{start}
 	{
-		// delta must be straight or diagonal
 		Delta delta {end-start};
+		// delta must be straight or diagonal
+		assert(delta.isDiagonal() || delta.isStraight());
+
 		maxSteps = delta.infNorm();
 		step = {delta.rank / maxSteps, delta.file/maxSteps};
 	}
@@ -83,26 +83,11 @@ struct Line
 		if (Linf > maxSteps || Linf == 0)
 			return false;
 
-		/* Missing check for paralellism
-		// Direction- and step- vector are colinear
-		return (
-			static_cast<float>(direction.rank)/step.rank ==
-			static_cast<float>(direction.file)/step.file
-		);
-		*/
 		// Scaled direction-vector matches step-vector
 		return (
 			static_cast<float>(direction.rank)/Linf == step.rank &&
 			static_cast<float>(direction.file)/Linf == step.file
 		);
-
-		/*
-		for (unsigned int i=0; i<=maxSteps; i++)
-			if (pos.rank == start.rank + step.rank * i &&
-				pos.file == start.file + step.file * i)
-				return true;
-		return false;
-		*/
 	}
 };
 

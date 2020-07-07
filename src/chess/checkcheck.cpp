@@ -123,14 +123,11 @@ bool hasBishopMove(
 	auto pinnedElement = pinnedPositions.find(pos);
 	bool isPinned = pinnedElement != pinnedPositions.end();
 
-#if 0
-	// Not sure I want these
 	if (mustKill && !(*mustKill - pos).isDiagonal())
 		return false;
 	if (isPinned && !pinnedElement->second.step.isDiagonal())
 		return false;
 
-#endif
 	for (int rankDirection=-1; rankDirection<=1; rankDirection+=2) {
 		for (int fileDirection=-1; fileDirection<=1; fileDirection+=2) {
 			Delta step {rankDirection, fileDirection};
@@ -173,14 +170,11 @@ bool hasRookMove(
 	auto pinnedElement = pinnedPositions.find(pos);
 	bool isPinned = pinnedElement != pinnedPositions.end();
 
-#if 0
-	// Not sure I want these
 	if (mustKill && !(*mustKill - pos).isStraight())
 		return false;
 	if (isPinned && !pinnedElement->second.step.isStraight())
 		return false;
 
-#endif
 	// Whether to move in rank or file
 	for (int rank=0; rank<=1; rank++) {
 		for (int direction=-1; direction<=1; direction+=2) {
@@ -256,10 +250,6 @@ bool hasKingMove(
 	// Found no legal moves
 	return false;
 }
-
-// checkAttack and checkGuarded should go somewhere (board.cpp)
-// and use less king-centric lingo so that it can be used in other circumstances
-// Actually checkGuarded should be checkKingGuarded
 
 GameStatus getGameStatus(Gamestate const* statep)
 {

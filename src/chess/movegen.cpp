@@ -37,7 +37,6 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 	newstatep->whiteToMove = !newstatep->whiteToMove;
 
 	// Update en passant
-	// This is probably faster than creating a new instance??
 	newstatep->passantSquare.rank = -1;
 	newstatep->passantSquare.file = -1;
 
@@ -223,14 +222,11 @@ void genBishopMoves(
 	auto pinnedElement = pinnedPositions.find(pos);
 	bool isPinned = pinnedElement != pinnedPositions.end();
 
-#if 0
-	// Not sure I want these
 	if (mustKill && !(*mustKill - pos).isDiagonal())
 		return;
 	if (isPinned && !pinnedElement->second.step.isDiagonal())
 		return;
 
-#endif
 	for (int rankDirection=-1; rankDirection<=1; rankDirection+=2) {
 		for (int fileDirection=-1; fileDirection<=1; fileDirection+=2) {
 			Delta step {rankDirection, fileDirection};
@@ -250,7 +246,6 @@ void genBishopMoves(
 					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.move(pos, target);
 				} else if (pieceColor(targetPiece) != c) {
-					//std::cerr << statep->toString() << std::endl;
 					assert(pieceType(targetPiece) != KING);
 					if (!cantMove) {
 						// Attack
@@ -306,14 +301,11 @@ void genRookMoves(
 
 	int homeRank = c == WHITE ? 0 : 7;
 
-#if 0
-	// Not sure I want these
 	if (mustKill && !(*mustKill - pos).isStraight())
 		return;
 	if (isPinned && !pinnedElement->second.step.isStraight())
 		return;
 
-#endif
 	// Whether to move in rank or file
 	for (int rank=0; rank<=1; rank++) {
 		for (int direction=-1; direction<=1; direction+=2) {
@@ -399,8 +391,6 @@ void genKingMoves(
 		if (!target.isValid())
 			continue;
 
-		//std::cerr << target.toString() << ": " << attackedSquares[it->second] << std::endl;
-
 		if (attackedSquares[it->second])
 			// Square is attacked by the opponent
 			continue;
@@ -434,13 +424,6 @@ void genKingMoves(
 				}
 
 			} else {
-				//std::cerr << "k" << std::endl;
-				//std::cerr << (mayCastle) << std::endl;
-				//std::cerr << (myCastle.kingside) << std::endl;
-				//std::cerr << (statep->board.get(target) == NONE) << std::endl;
-				//std::cerr << (statep->board.get(target + Coordinate{0, -1}) == NONE) << std::endl;
-				//std::cerr << (!attackedSquares[kingMoveOrder.find({0, 1})->second]) << std::endl;
-				//std::cerr << kingMoveOrder.find({0, -1})->second << std::endl;
 				// Kingside
 				if (
 					mayCastle &&

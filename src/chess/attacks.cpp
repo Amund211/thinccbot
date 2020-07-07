@@ -27,32 +27,24 @@ AttackStatus checkAttack(
 	// Assumes that kingPos and attackerPos are on the same diagonal/rank/file
 	Delta step {(kingPos-attackerPos).step()};
 
-	/*
-	std::cerr << "Call to checkAttack:\n"
-		<< "kingPos: " << kingPos.toString() << "\n"
-		<< "attackerPos: " << attackerPos.toString() << std::endl;
-	*/
-
 	bool blocked = false;
 
 	// Look at all the spaces between the friendly king and the attacking piece
 	for (Coordinate cur{attackerPos + step}; cur != kingPos; cur += step) {
-		//std::cerr << cur.toString() << std::endl;
 		Piece tmpPiece = b.get(cur);
 		if (pieceType(tmpPiece) != NONE) {
 			if (pieceColor(tmpPiece) == opponent) {
 				// An opposing piece is blocking
-				// We can't capture this piece with our king, since it's defended
 				if (!blocked && (cur-kingPos).infNorm() == 1)
-					// kingPos -> cur is a valid kingmove
+					// We can't capture this piece with our king, since it's defended
 					attackedSquares[kingMoveOrder.at((cur-kingPos).step())] = true;
 
-				// We are free to move any piece off the line
+				// No pins on this line
 				return AttackStatus::CLEAR;
 			} else {
 				if (blocked) {
 					// Two friendly pieces are blocking
-					// We are free to move any piece off the line
+					// No pins on this line
 					return AttackStatus::CLEAR;
 				} else {
 					pinnedPos = cur;
@@ -66,6 +58,7 @@ AttackStatus checkAttack(
 		// Exactly one friendly blocker and no hostile blockers
 		return AttackStatus::PINNED;
 	} else {
+		// The line is open
 		// King can't move away from this attacker
 		attackedSquares[kingMoveOrder.at(step)] = true;
 
@@ -84,15 +77,7 @@ void checkGuarded(
 	std::array<bool, 10>& attackedSquares
 )
 {
-	/*
-	std::cerr << "Call to checkGuarded:\n"
-		<< "kingPos: " << kingPos.toString() << "\n"
-		<< "target: " << target.toString() << "\n"
-		<< "attackerPos: " << attackerPos.toString() << std::endl;
-	*/
 	assert((attackerPos-target).isDiagonal() || (attackerPos-target).isStraight());
-	//if (target == attackerPos)
-		//return;
 
 	// Assumes that target and attackerPos are on the same diagonal/rank/file
 	Delta step {(target-attackerPos).step()};
@@ -101,7 +86,6 @@ void checkGuarded(
 	for (Coordinate cur{attackerPos + step}; cur != target; cur += step) {
 		if (!cur.isValid())
 			return;
-		//std::cerr << cur.toString() << std::endl;
 		Delta kingMove {cur-kingPos};
 		if (kingMove.infNorm() == 1 || (std::abs(kingMove.file) == 2 && kingMove.rank == 0))
 			// Valid king-move
@@ -135,12 +119,10 @@ unsigned int getAttacks(
 )
 {
 	// Returns amount of checks on the king
+	unsigned int amtChecks = 0;
 
 	Color opponent = opponentColor(toMove);
 	int opponentDirection = pawnDirection(opponent);
-
-	// Amount of checks on the king
-	unsigned int amtChecks = 0;
 
 	// Passed into checkAttack to return the position of the pinnedPiece
 	Coordinate pinnedPos;
@@ -168,8 +150,6 @@ unsigned int getAttacks(
 							auto it = kingMoveOrder.find({relativeAttackRank, -delta.file + fileOffset});
 							if (it != kingMoveOrder.end()) {
 								attackedSquares[it->second] = true;
-								//std::cerr << "Pawn: " << Coordinate{rank, file}.toString() << std::endl;
-								//std::cerr << "attacked: " << (kingPos + Coordinate{relativeAttackRank, -delta.file + fileOffset}).toString() << std::endl;
 							}
 						}
 					}
@@ -188,7 +168,6 @@ unsigned int getAttacks(
 							Delta guardTarget = delta + it->first;
 							if (std::abs(guardTarget.rank * guardTarget.file) == 2) {
 								attackedSquares[it->second] = true;
-								//std::cerr << "Knight: " << it->first.toString() << std::endl;
 							}
 						}
 					}
@@ -278,7 +257,6 @@ unsigned int getAttacks(
 											target -= Coordinate{1, 1};
 										checkGuarded(board, target, kingPos, {rank, file}, attackedSquares);
 									}
-									//checkGuarded(board, kingPos + Coordinate{upwardOffset * position, -upwardOffset * !position}, kingPos, {rank, file}, attackedSquares);
 									break;
 								default:
 									// Line is too far away
@@ -300,7 +278,6 @@ unsigned int getAttacks(
 											target -= Coordinate{-1, 1};
 										checkGuarded(board, target, kingPos, {rank, file}, attackedSquares);
 									}
-									//checkGuarded(board, kingPos + Coordinate{downwardOffset * position, downwardOffset * !position}, kingPos, {rank, file}, attackedSquares);
 									break;
 								default:
 									// Line is too far away
