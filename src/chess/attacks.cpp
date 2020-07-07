@@ -25,18 +25,25 @@ AttackStatus checkAttack(
 
 	assert((attackerPos-kingPos).isDiagonal() || (attackerPos-kingPos).isStraight());
 	// Assumes that kingPos and attackerPos are on the same diagonal/rank/file
-	Delta step {(attackerPos-kingPos).step()};
+	Delta step {(kingPos-attackerPos).step()};
+
+	/*
+	std::cerr << "Call to checkAttack:\n"
+		<< "kingPos: " << kingPos.toString() << "\n"
+		<< "attackerPos: " << attackerPos.toString() << std::endl;
+	*/
 
 	bool blocked = false;
 
-	// Start look at all the spaces between the friendly king and the attacking piece
-	for (Coordinate cur{kingPos + step}; cur != attackerPos; cur += step) {
+	// Look at all the spaces between the friendly king and the attacking piece
+	for (Coordinate cur{attackerPos + step}; cur != kingPos; cur += step) {
+		//std::cerr << cur.toString() << std::endl;
 		Piece tmpPiece = b.get(cur);
 		if (pieceType(tmpPiece) != NONE) {
 			if (pieceColor(tmpPiece) == opponent) {
 				// An opposing piece is blocking
 				// We can't capture this piece with our king, since it's defended
-				if ((cur-kingPos).infNorm() == 1)
+				if (!blocked && (cur-kingPos).infNorm() == 1)
 					// kingPos -> cur is a valid kingmove
 					attackedSquares[kingMoveOrder.at((cur-kingPos).step())] = true;
 
@@ -60,11 +67,11 @@ AttackStatus checkAttack(
 		return AttackStatus::PINNED;
 	} else {
 		// King can't move away from this attacker
-		attackedSquares[kingMoveOrder.at(-step)] = true;
+		attackedSquares[kingMoveOrder.at(step)] = true;
 
-		if (kingPos + step != attackerPos)
+		if (kingPos - step != attackerPos)
 			// King can't move towards his attacker if he can't capture it
-			attackedSquares[kingMoveOrder.at(step)] = true;
+			attackedSquares[kingMoveOrder.at(-step)] = true;
 		return AttackStatus::ATTACKED;
 	}
 }
@@ -94,6 +101,7 @@ void checkGuarded(
 	for (Coordinate cur{attackerPos + step}; cur != target; cur += step) {
 		if (!cur.isValid())
 			return;
+		//std::cerr << cur.toString() << std::endl;
 		Delta kingMove {cur-kingPos};
 		if (kingMove.infNorm() == 1 || (std::abs(kingMove.file) == 2 && kingMove.rank == 0))
 			// Valid king-move
@@ -153,14 +161,15 @@ unsigned int getAttacks(
 						amtChecks++;
 					} else {
 						// Check if the pawn is guarding any squares next to the king
-						int relativeAttackRank = delta.rank - opponentDirection;
-						int relativeAttackCenterFile = delta.file;
-						if (std::abs(relativeAttackRank) > 1 || std::abs(relativeAttackCenterFile) > 2)
+						int relativeAttackRank = opponentDirection - delta.rank;
+						if (std::abs(relativeAttackRank) > 1 || std::abs(delta.file) > 3)
 							continue;
 						for (int fileOffset=-1; fileOffset<=1; fileOffset+=2) {
-							auto it = kingMoveOrder.find({-relativeAttackRank, -relativeAttackCenterFile + fileOffset});
+							auto it = kingMoveOrder.find({relativeAttackRank, -delta.file + fileOffset});
 							if (it != kingMoveOrder.end()) {
 								attackedSquares[it->second] = true;
+								//std::cerr << "Pawn: " << Coordinate{rank, file}.toString() << std::endl;
+								//std::cerr << "attacked: " << (kingPos + Coordinate{relativeAttackRank, -delta.file + fileOffset}).toString() << std::endl;
 							}
 						}
 					}
@@ -179,6 +188,7 @@ unsigned int getAttacks(
 							Delta guardTarget = delta + it->first;
 							if (std::abs(guardTarget.rank * guardTarget.file) == 2) {
 								attackedSquares[it->second] = true;
+								//std::cerr << "Knight: " << it->first.toString() << std::endl;
 							}
 						}
 					}
@@ -302,8 +312,7 @@ unsigned int getAttacks(
 					break;
 				case KING:
 					// A king can't check, but can block squares
-					// LEGAWL KINGMOVE = INFNORM = 1
-					if (std::abs(delta.rank) > 2 || std::abs(delta.file) > 2)
+					if (std::abs(delta.rank) > 2 || std::abs(delta.file) > 3)
 						continue;
 					for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 						Delta guardTarget = delta + it->first;

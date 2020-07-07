@@ -43,12 +43,21 @@ void deleteAction(Action* action) {
 Action::Action(Coordinate from, Coordinate to, Piece promotionPiece)
 	: from{from}, to{to}, promotionPiece{promotionPiece} {}
 
+std::string Action::toAN() const {
+	std::string s {from.toString()};
+	s += to.toString();
+	if (pieceType(promotionPiece) != NONE) {
+		s += pieceToSymbol[promotionPiece];
+	}
+	return s;
+}
+
 std::string Action::toString() const {
 	std::string s {from.toString()};
 	s += " ";
 	s += to.toString();
 	if (pieceType(promotionPiece) != NONE) {
-		s += " ";
+		s += "=";
 		s += pieceToSymbol[promotionPiece];
 	}
 	return s;

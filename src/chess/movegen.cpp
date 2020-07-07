@@ -12,11 +12,26 @@
 #include "attacks.h"
 #include "../game.h"
 
-Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamestates)
+Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamestates, const Coordinate& target)
 {
 	// Insert a copy of the current state into gamestates
 	Gamestate* newstatep = new Gamestate{*current};
 	gamestates.push_back(newstatep);
+
+	// Test if a rook is being captured
+	if (target.rank == (newstatep->whiteToMove ? 7 : 0)) {
+		// Unset queen-/kingside castling-rights if capturing on a or h
+		switch (target.file) {
+			case 0:
+				(newstatep->whiteToMove ? newstatep->blackCastle : newstatep->whiteCastle).queenside = false;
+				break;
+			case 7:
+				(newstatep->whiteToMove ? newstatep->blackCastle : newstatep->whiteCastle).kingside = false;
+				break;
+			default:
+				break;
+		}
+	}
 
 	// Update toMove
 	newstatep->whiteToMove = !newstatep->whiteToMove;
@@ -71,7 +86,7 @@ void genPawnMoves(
 				for (Piece promotion=QUEEN; promotion>=KNIGHT; promotion--) {
 					actions.push_back(new Action{pos, target, promotion});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.set(pos, NONE);
 					newstatep->board.set(target, c | promotion);
 					// Pawn move & capture
@@ -80,22 +95,23 @@ void genPawnMoves(
 			} else {
 				actions.push_back(new Action{pos, target});
 
-				Gamestate* newstatep = createState(statep, gamestates);
+				Gamestate* newstatep = createState(statep, gamestates, target);
 				newstatep->board.move(pos, target);
 				// Pawn move & capture
 				newstatep->rule50Ply = 0;
 			}
 		} else if (target == statep->passantSquare) {
-			if (mustKill && statep->passantSquare - Delta{direction, 0} != *mustKill)
+			Coordinate pawnPos {statep->passantSquare - Delta{direction, 0}};
+			if (mustKill && pawnPos != *mustKill)
 				continue;
 			if (mustBlock && !mustBlock->contains(target))
 				continue;
 			// En passant
 			actions.push_back(new Action{pos, target});
 
-			Gamestate* newstatep = createState(statep, gamestates);
+			Gamestate* newstatep = createState(statep, gamestates, target);
 			newstatep->board.move(pos, target);
-			newstatep->board.set(pos - Coordinate{direction, 0}, NONE);
+			newstatep->board.set(pawnPos, NONE);
 			// Pawn move & capture
 			newstatep->rule50Ply = 0;
 		}
@@ -117,7 +133,7 @@ void genPawnMoves(
 				for (Piece promotion=QUEEN; promotion>=KNIGHT; promotion--) {
 					actions.push_back(new Action{pos, target, promotion});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.set(pos, NONE);
 					newstatep->board.set(target, c | promotion);
 					// Pawn move
@@ -126,7 +142,7 @@ void genPawnMoves(
 			} else {
 				actions.push_back(new Action{pos, target});
 
-				Gamestate* newstatep = createState(statep, gamestates);
+				Gamestate* newstatep = createState(statep, gamestates, target);
 				newstatep->board.move(pos, target);
 				// Pawn move
 				newstatep->rule50Ply = 0;
@@ -140,7 +156,7 @@ void genPawnMoves(
 					// Move two steps
 					actions.push_back(new Action{pos, target});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.move(pos, target);
 					newstatep->passantSquare = target - Coordinate{direction, 0};
 					// Pawn move
@@ -183,7 +199,7 @@ void genKnightMoves(
 			// Move or attack
 			actions.push_back(new Action{pos, target});
 
-			Gamestate* newstatep = createState(statep, gamestates);
+			Gamestate* newstatep = createState(statep, gamestates, target);
 			newstatep->board.move(pos, target);
 			if (targetPiece != NONE)
 				// Capture
@@ -231,7 +247,7 @@ void genBishopMoves(
 					// Move
 					actions.push_back(new Action{pos, target});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.move(pos, target);
 				} else if (pieceColor(targetPiece) != c) {
 					//std::cerr << statep->toString() << std::endl;
@@ -240,7 +256,7 @@ void genBishopMoves(
 						// Attack
 						actions.push_back(new Action{pos, target});
 
-						Gamestate* newstatep = createState(statep, gamestates);
+						Gamestate* newstatep = createState(statep, gamestates, target);
 						newstatep->board.move(pos, target);
 						// Capture
 						newstatep->rule50Ply = 0;
@@ -315,7 +331,7 @@ void genRookMoves(
 					// Move
 					actions.push_back(new Action{pos, target});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					newstatep->board.move(pos, target);
 					if (pos.rank == homeRank)
 						// Unset castling avaliability
@@ -327,7 +343,7 @@ void genRookMoves(
 						// Attack
 						actions.push_back(new Action{pos, target});
 
-						Gamestate* newstatep = createState(statep, gamestates);
+						Gamestate* newstatep = createState(statep, gamestates, target);
 						newstatep->board.move(pos, target);
 						// Capture
 						newstatep->rule50Ply = 0;
@@ -401,11 +417,11 @@ void genKingMoves(
 					statep->board.get(target) == NONE &&
 					statep->board.get(target + Coordinate{0, 1}) == NONE &&
 					statep->board.get(target - Coordinate{0, 1}) == NONE &&
-					!attackedSquares[kingMoveOrder.find({0, 1})->second]
+					!attackedSquares[kingMoveOrder.find({0, -1})->second]
 				) {
 					actions.push_back(new Action{pos, target});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					// Move the king
 					newstatep->board.move(pos, target);
 					// Move the rook
@@ -418,17 +434,24 @@ void genKingMoves(
 				}
 
 			} else {
+				//std::cerr << "k" << std::endl;
+				//std::cerr << (mayCastle) << std::endl;
+				//std::cerr << (myCastle.kingside) << std::endl;
+				//std::cerr << (statep->board.get(target) == NONE) << std::endl;
+				//std::cerr << (statep->board.get(target + Coordinate{0, -1}) == NONE) << std::endl;
+				//std::cerr << (!attackedSquares[kingMoveOrder.find({0, 1})->second]) << std::endl;
+				//std::cerr << kingMoveOrder.find({0, -1})->second << std::endl;
 				// Kingside
 				if (
 					mayCastle &&
 					myCastle.kingside &&
 					statep->board.get(target) == NONE &&
 					statep->board.get(target + Coordinate{0, -1}) == NONE &&
-					!attackedSquares[kingMoveOrder.find({0, -1})->second]
+					!attackedSquares[kingMoveOrder.find({0, 1})->second]
 				) {
 					actions.push_back(new Action{pos, target});
 
-					Gamestate* newstatep = createState(statep, gamestates);
+					Gamestate* newstatep = createState(statep, gamestates, target);
 					// Move the king
 					newstatep->board.move(pos, target);
 					// Move the rook
@@ -445,7 +468,7 @@ void genKingMoves(
 			// Move or attack
 			actions.push_back(new Action{pos, target});
 
-			Gamestate* newstatep = createState(statep, gamestates);
+			Gamestate* newstatep = createState(statep, gamestates, target);
 			newstatep->board.move(pos, target);
 
 			// Can't castle after moving king

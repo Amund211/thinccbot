@@ -20,6 +20,7 @@ struct Action
 
 	Action(Coordinate from, Coordinate to, Piece promotionPiece=NONE);
 
+	std::string toAN() const;
 	std::string toString() const;
 
 	bool operator ==(const Action& b) const;
