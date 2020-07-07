@@ -12,6 +12,16 @@
  * This is used as a simple example to test the tree-search.
  */
 
+void deleteState(Gamestate* statep)
+{
+	delete statep;
+}
+
+void deleteAction(Action* actionp)
+{
+	delete actionp;
+}
+
 unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
 	// Game has ended
 	if (statep->white >= 9) {
