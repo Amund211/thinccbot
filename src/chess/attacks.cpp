@@ -162,7 +162,7 @@ unsigned int getAttacks(
 							mustKill = std::make_unique<Coordinate>(rank, file);
 						amtChecks++;
 					}
-					if (std::abs(delta.rank) <= 3 && std::abs(delta.file) <= 3) {
+					if (std::abs(delta.rank) <= 3 && std::abs(delta.file) <= 4) {
 						// Check if the knight is guarding any squares next to the king
 						for (auto it = kingMoveOrder.begin(); it != kingMoveOrder.end(); it++) {
 							Delta guardTarget = delta + it->first;

@@ -6,8 +6,8 @@
 #include "evaluation.h"
 #include "../trees.h"
 
-#define VALIDATE true
-#define TEST true
+#define VALIDATE false
+#define TEST false
 
 #if VALIDATE
 int validate()
@@ -152,6 +152,7 @@ int test()
 	FEN = "Qr5k/8/3p1qpP/p3n3/P4p2/8/2P2pP1/1R3K2 w - - 0 1";
 	FEN = "r3r1k1/1p3pbp/p2p2p1/P2PPb2/R1B2P2/5N1P/1P3qP1/2B3K1 w - - 0 1";
 	FEN = "1k1K4/8/2P1B3/8/1N6/p7/8/2r5 b - - 13 1";
+	FEN = "rnbqkbnr/2pppppp/8/pp6/3PP3/8/PPP2PPP/RNBQKBNR w KQkq b6 0 1";
 
 	try {
 		s = FEN;
@@ -234,6 +235,17 @@ int play()
 	FEN = "5k1r/1bQRbp2/1pN5/7p/1P6/4P1P1/5PP1/6K1 w - - 1 1";
 	FEN = STARTING_FEN;
 	FEN = "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6";
+	FEN = STARTING_FEN;
+	FEN = "rnbqkbnr/2pppppp/8/pp6/3PP3/8/PPP2PPP/RNBQKBNR w KQkq b6 0 1";
+	FEN = STARTING_FEN;
+	FEN = "2b1kb1r/3pnppp/2p1p3/2n5/4q2P/6P1/PQ3P1K/1RB5 w k - 0 1";
+	FEN = STARTING_FEN;
+	FEN = "4Rbkr/p1p2ppp/2q5/8/5P2/4P1P1/6K1/8 w - - 1 1";
+	FEN = "6kr/p1p2ppp/8/2Q1p3/2P3Pb/1P2P3/Pq3PP1/R4RK1 w - - 1 1";
+	FEN = "6r1/5Rpk/1Q5p/2P1p3/6P1/1P2q3/P5PK/8 w - - 0 1";
+	FEN = "1Q6/6p1/6kp/8/8/2K5/8/8 w - - 0 1";
+	FEN = STARTING_FEN;
+	FEN = "6rn/2k2p1p/pp3B2/2bR2PP/3N4/6P1/P3r3/5K2 w - - 0 1";
 
 	try {
 		sp = new Gamestate {FEN};
@@ -245,20 +257,20 @@ int play()
 	Node *root = new Node{sp, nullptr, 0, nullptr};
 
 	unsigned int depth = 5;
-	bool player = false;
+	bool player = true;
 	bool playerWhite = true;
 
 	Evaluation e;
+
+	std::cout << std::endl;
+	std::cout << root->state->toString() << std::endl;
+	std::cout << "State evaluation:\t" << evaluation(root->state) << std::endl;
+	root->state->board.print(playerWhite ? WHITE : BLACK, true);
 
 	while (!gameOver(root->state)) {
 		Node* nextRoot;
 		Action a{{0,0},{0,0}};
 		std::string tmp;
-
-		// Print state
-		std::cout << root->state->toString() << std::endl;
-		root->state->board.print(playerWhite ? WHITE : BLACK, true);
-		std::cout << "State evaluation:\t" << evaluation(root->state) << std::endl;
 
 		if (player && root->state->whiteToMove == playerWhite) {
 			// Generate child-nodes
@@ -268,7 +280,11 @@ int play()
 			Coordinate from = {tmp};
 			std::cin >> tmp;
 			Coordinate to = {tmp};
-			std::cin >> tmp;
+			Piece tmpPiece = root->state->board.get(from);
+			if (pieceType(tmpPiece) == PAWN && from.rank == (root->state->whiteToMove ? 6 : 1))
+				std::cin >> tmp;
+			else
+				tmp = "p";
 
 			if (tmp == "p") {
 				a = {from, to};
@@ -276,6 +292,7 @@ int play()
 				Piece pp = symbolToPiece(tmp[0]);
 				a = {from, to, pp};
 			}
+			std::cout << std::endl;
 		} else {
 			e = bestAction(root, depth);
 			a = *e.action;
@@ -284,19 +301,25 @@ int play()
 		}
 
 		// Find the corresponding child-node
-		for (unsigned int i=0; i<root->amtChildren; i++) {
-			if (*root->children[i]->action == a) {
+		for (unsigned int i=0; i<root->amtChildren; i++)
+			if (*root->children[i]->action == a)
 				nextRoot = root->children[i];
-			} else {
+
+		// Print state
+		std::cout << std::endl;
+		std::cout << nextRoot->state->toString() << std::endl;
+		std::cout << "State evaluation:\t" << evaluation(nextRoot->state) << std::endl;
+		nextRoot->state->board.print(playerWhite ? WHITE : BLACK, true);
+
+		// Free orphans
+		for (unsigned int i=0; i<root->amtChildren; i++)
+			if (!(*root->children[i]->action == a))
 				freeSubtree(root->children[i]);
-			}
-		}
 
 		// Free old root
 		delete root;
 
 		root = nextRoot;
-		std::cout << "\n";
 	}
 
 	// Print terminal state

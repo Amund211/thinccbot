@@ -9,7 +9,9 @@ import chess.pgn
 ENGINEPATH = "../../bin/chess"
 PGNPATH = "../../../chess/games/KingBase2018-A00-A39.pgn"
 PGNPATH = "../../../chess/games/KingBase2018-A40-A79.pgn"; SKIP_GAMES = 2000
-PGNPATH = "../../../chess/games/KingBase2018-A80-A99.pgn"; SKIP_GAMES = 5387
+# Done
+# PGNPATH = "../../../chess/games/KingBase2018-A80-A99.pgn"; SKIP_GAMES = 31330
+PGNPATH = "../../../chess/games/KingBase2018-B00-B19.pgn"; SKIP_GAMES = 11375
 
 engine = subprocess.Popen(
     [ENGINEPATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
@@ -18,9 +20,6 @@ engine = subprocess.Popen(
 games = 0
 played_moves = 0
 seen_moves = 0
-
-
-start_time = datetime.now()
 
 
 def print_results():
@@ -47,8 +46,12 @@ with open(PGNPATH, encoding="utf-8", errors="replace") as pgn_file:
         try:
             game = chess.pgn.read_game(pgn_file)
         except:
-            print_results()
             raise
+    if SKIP_GAMES:
+        print("Finished skipping")
+
+    start_time = datetime.now()
+
     try:
         while pgn_file:
             games += 1
@@ -57,6 +60,11 @@ with open(PGNPATH, encoding="utf-8", errors="replace") as pgn_file:
             except:
                 print_results()
                 raise
+            else:
+                if game is None:
+                    print(f"Finished file {PGNPATH}")
+                    print_results()
+                    sys.exit(0)
 
             board = game.board()
             for move in game.mainline_moves():
