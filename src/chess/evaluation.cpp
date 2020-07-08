@@ -1,4 +1,5 @@
 #include "evaluation.h"
+#include "psqt.h"
 
 #include "states.h"
 #include "pieces.h"
@@ -18,6 +19,15 @@ float materialCount(const Board& b)
 	return count;
 }
 
+float psqtScore(const Board& b)
+{
+	float score = 0;
+	for (int rank=0; rank<8; rank++)
+		for (int file=0; file<8; file++)
+			score += PSQT[b.get({rank, file})][rank][file];
+	return score;
+}
+
 float evaluation(Gamestate const* statep) {
 	GameStatus status = getGameStatus(statep);
 	switch (status) {
@@ -33,7 +43,8 @@ float evaluation(Gamestate const* statep) {
 		// Both players can claim a draw
 		return 0;
 
-	return materialCount(statep->board);
+	return psqtScore(statep->board);
+	//return materialCount(statep->board);
 }
 
 bool gameOver(Gamestate const* statep)
