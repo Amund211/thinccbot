@@ -16,7 +16,10 @@ int validate()
 	// Used to validate the move-generation
 	std::string FEN;
 	Gamestate s;
-	Node *root = new Node{&s, nullptr, 0, nullptr};
+
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
+
 	while (std::getline(std::cin, FEN)) {
 		// Test FEN -> gamestate
 		try {
@@ -34,15 +37,16 @@ int validate()
 			return 1;
 		}
 
-		genChildren(root);
-		for (unsigned int i=0; i<root->amtChildren; i++) {
-			std::cout << root->children[i]->action->toAN() << "\t"
-				<< root->children[i]->state->toFEN() << std::endl;
-			delete root->children[i];
+		genChildren(&s, states, actions);
+		for (unsigned int i=0; i<actions.size(); i++) {
+			std::cout << actions[i]->toAN() << "\t"
+				<< states[i]->toFEN() << std::endl;
+			delete actions[i];
+			delete states[i];
 		}
 
-		delete[] root->children;
-		root->children = nullptr;
+		actions.clear();
+		states.clear();
 
 		std::cout << "DONE" << std::endl;
 	}
@@ -154,6 +158,12 @@ int test()
 	FEN = "1k1K4/8/2P1B3/8/1N6/p7/8/2r5 b - - 13 1";
 	FEN = "rnbqkbnr/2pppppp/8/pp6/3PP3/8/PPP2PPP/RNBQKBNR w KQkq b6 0 1";
 
+	// En passant (e5f6) is illegal because of the queen
+	FEN = "8/8/4p1k1/2K1Ppq1/4Q3/8/8/8 w - f6 0 1";
+	// Simpler cases
+	FEN = "k7/7q/8/4Pp2/8/3K4/8/8 w - f6 0 1";
+	FEN = "6k1/8/4p3/P2rPp1K/1P2R2P/5RP1/1r6/8 w - f6 0 1";
+
 	try {
 		s = FEN;
 	} catch (const std::invalid_argument& ia) {
@@ -165,21 +175,21 @@ int test()
 	std::cout << s.toFEN() << std::endl;
 	s.board.print(WHITE, true);
 
-	Node *root = new Node{&s, nullptr, 0, nullptr};
-
-	std::cerr << "Current state:" << std::endl << root->state->toString() << "\n" << std::endl;
+	std::cerr << "Current state:" << std::endl << s.toString() << "\n" << std::endl;
 
 	unsigned int depth = 1;
-	bool player = true;
 
-	Evaluation e = bestAction(root, depth);
-
-	std::cout << root->amtChildren << " valid move(s)" << std::endl;
-	for (unsigned int i=0; i<root->amtChildren; i++) {
-		std::cout << root->children[i]->action->toString() << std::endl;
-	}
+	Evaluation e = bestAction(&s, depth);
 	(void) e;
-	(void) player;
+
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
+	genChildren(&s, states, actions);
+
+	std::cout << actions.size() << " valid move(s)" << std::endl;
+	for (unsigned int i=0; i<actions.size(); i++) {
+		std::cout << actions[i]->toString() << std::endl;
+	}
 
 	return 0;
 }
@@ -246,6 +256,9 @@ int play()
 	FEN = "1Q6/6p1/6kp/8/8/2K5/8/8 w - - 0 1";
 	FEN = STARTING_FEN;
 	FEN = "6rn/2k2p1p/pp3B2/2bR2PP/3N4/6P1/P3r3/5K2 w - - 0 1";
+	FEN = STARTING_FEN;
+	FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/5Q2/PPPP1PPP/RNB1KBNR b KQkq - 2 1";
+	FEN = STARTING_FEN;
 
 	try {
 		sp = new Gamestate {FEN};
@@ -254,8 +267,6 @@ int play()
 		return 1;
 	}
 
-	Node *root = new Node{sp, nullptr, 0, nullptr};
-
 	unsigned int depth = 5;
 	bool player = true;
 	bool playerWhite = true;
@@ -263,71 +274,82 @@ int play()
 	Evaluation e;
 
 	std::cout << std::endl;
-	std::cout << root->state->toString() << std::endl;
-	std::cout << "State evaluation:\t" << evaluation(root->state) << std::endl;
-	root->state->board.print(playerWhite ? WHITE : BLACK, true);
+	std::cout << sp->toString() << std::endl;
+	std::cout << "State evaluation:\t" << evaluation(sp) << std::endl;
+	sp->board.print(playerWhite ? WHITE : BLACK, true);
 
-	while (!gameOver(root->state)) {
-		Node* nextRoot;
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
+
+	while (!gameOver(sp)) {
 		Action a{{0,0},{0,0}};
 		std::string tmp;
 
-		if (player && root->state->whiteToMove == playerWhite) {
-			// Generate child-nodes
-			genChildren(root);
+		genChildren(sp, states, actions);
+
+		if (player && sp->whiteToMove == playerWhite) {
 			// No input-validation
 			std::cin >> tmp;
 			Coordinate from = {tmp};
 			std::cin >> tmp;
 			Coordinate to = {tmp};
-			Piece tmpPiece = root->state->board.get(from);
-			if (pieceType(tmpPiece) == PAWN && from.rank == (root->state->whiteToMove ? 6 : 1))
+			Piece tmpPiece = sp->board.get(from);
+			if (pieceType(tmpPiece) == PAWN && from.rank == (sp->whiteToMove ? 6 : 1)) {
 				std::cin >> tmp;
-			else
-				tmp = "p";
-
-			if (tmp == "p") {
-				a = {from, to};
-			} else {
 				Piece pp = symbolToPiece(tmp[0]);
 				a = {from, to, pp};
+			} else {
+				a = {from, to};
 			}
+
 			std::cout << std::endl;
 		} else {
-			e = bestAction(root, depth);
+			e = bestAction(sp, depth);
 			a = *e.action;
-			std::cout << "Node evaluation:\t" << (root->state->whiteToMove ? 1 : -1) * e.evaluation << std::endl;
+			std::cout << "Node evaluation:\t" << (sp->whiteToMove ? 1 : -1) * e.evaluation << std::endl;
 			std::cout << "Computer plays:\t" << e.action->toString() << std::endl;
 		}
 
+		// Free old state
+		delete sp;
+
 		// Find the corresponding child-node
-		for (unsigned int i=0; i<root->amtChildren; i++)
-			if (*root->children[i]->action == a)
-				nextRoot = root->children[i];
+		for (unsigned int i=0; i<actions.size(); i++)
+			if (*actions[i] == a) {
+				sp = states[i];
+				break;
+			}
 
 		// Print state
 		std::cout << std::endl;
-		std::cout << nextRoot->state->toString() << std::endl;
-		std::cout << "State evaluation:\t" << evaluation(nextRoot->state) << std::endl;
-		nextRoot->state->board.print(playerWhite ? WHITE : BLACK, true);
+		std::cout << sp->toString() << std::endl;
+		std::cout << "State evaluation:\t" << evaluation(sp) << std::endl;
+		sp->board.print(playerWhite ? WHITE : BLACK, true);
+
+		// If both players are computers or the player is making the next move
+		if (!player || sp->whiteToMove == playerWhite) {
+			// Free action
+			delete e.action;
+		}
 
 		// Free orphans
-		for (unsigned int i=0; i<root->amtChildren; i++)
-			if (!(*root->children[i]->action == a))
-				freeSubtree(root->children[i]);
+		for (unsigned int i=0; i<actions.size(); i++) {
+			if (sp != states[i]) {
+				delete actions[i];
+				delete states[i];
+			}
+		}
 
-		// Free old root
-		delete root;
-
-		root = nextRoot;
+		actions.clear();
+		states.clear();
 	}
 
 	// Print terminal state
-	std::cout << root->state->toString() << std::endl;
-	root->state->board.print(playerWhite ? WHITE : BLACK, true);
+	std::cout << sp->toString() << std::endl;
+	sp->board.print(playerWhite ? WHITE : BLACK, true);
 
 	std::cout << e.evaluation << std::endl;
-	std::cout << evaluation(root->state) << std::endl;
+	std::cout << evaluation(sp) << std::endl;
 
 	return 0;
 }

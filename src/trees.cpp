@@ -6,93 +6,65 @@
 
 #include "game.h"
 
-Node::~Node()
-{
-	deleteState(state);
-	deleteAction(action);
-	delete children;
-}
-
-void genChildren(Node* nodep)
-{
-	if (nodep->children) {
-		// Node already has children
-		return;
-	}
-
-	std::vector<Gamestate*> states;
-	std::vector<Action*> actions;
-
-	// Get list of legal moves
-	unsigned int amtActions = getActions(nodep->state, states, actions);
-
-	// Terminal state
-	if (amtActions == 0) {
-		nodep->amtChildren = 0;
-		return;
-	}
-
-	// Allocate children array for node
-	nodep->amtChildren = amtActions;
-	nodep->children = new Node*[amtActions];
-
-	for (unsigned int i=0; i<amtActions; i++) {
-		// Append child node to parent
-		nodep->children[i] = new Node{states[i], actions[i], 0, nullptr};
-	}
-}
-
-void freeSubtree(Node* nodep)
-{
-	for (unsigned int i=0; i<nodep->amtChildren; i++)
-		freeSubtree(nodep->children[i]);
-	delete nodep;
-}
-
-Evaluation bestAction(Node* nodep, unsigned int depth)
+Evaluation bestAction(Gamestate const* statep, unsigned int depth)
 {
 	// State must not be terminal
 	float value;
 	float childValue;
-	Action* bestAction;
+	Action* bestAction = nullptr;
+
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
 
 	// Generate children of root node
-	genChildren(nodep);
+	genChildren(statep, states, actions);
 
 	value = -INFINITY;
-	for (unsigned int i=0; i<nodep->amtChildren; i++) {
-		childValue = -negamax(nodep->children[i], depth - 1, -INFINITY, INFINITY);
+	for (unsigned int i=0; i<states.size(); i++) {
+		childValue = -negamax(states[i], depth - 1, -INFINITY, INFINITY);
 		if (childValue > value) {
 			// New best action
 			value = childValue;
-			bestAction = nodep->children[i]->action;
+			if (bestAction) {
+				deleteAction(bestAction);
+			}
+			bestAction = actions[i];
+		} else {
+			deleteAction(actions[i]);
 		}
+		deleteState(states[i]);
 	}
 	return { bestAction, value };
 }
 
-float negamax(Node* nodep, unsigned int depth, float alpha, float beta)
+float negamax(Gamestate const* statep, unsigned int depth, float alpha, float beta)
 {
-	if (depth == 0 || (genChildren(nodep), nodep->amtChildren == 0)) {
-		float eval = evaluation(nodep->state);
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
+
+	if (depth == 0 || (genChildren(statep, states, actions), states.size() == 0)) {
+		float eval = evaluation(statep);
+		int sign = *reinterpret_cast<bool const*>(statep) ? 1 : -1;
 		// Weigh won/lost nodes by distance to emulate human play
 		// Gamestates must store `bool whiteToMove` as their first member
 		if (eval == 100)
-			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * (eval + depth);
+			return sign * (eval + depth);
 		else if (eval == -100)
-			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * (eval - depth);
+			return sign * (eval - depth);
 		else
-			return (*reinterpret_cast<bool*>(nodep->state) ? 1 : -1 ) * eval;
+			return sign * eval;
 	}
 
+	for (Action* nextAction : actions)
+		deleteAction(nextAction);
+
 	float value = -INFINITY;
-	for (unsigned int i=0; i<nodep->amtChildren; i++) {
-		value = std::max(value, -negamax(nodep->children[i], depth - 1, -beta, -alpha));
-		alpha = std::max(alpha, value);
-		if (alpha >= beta) {
-			// TODO: Clean up remaining children
-			break;
+	for (Gamestate* nextState : states) {
+		if (alpha < beta) {
+			value = std::max(value, -negamax(nextState, depth - 1, -beta, -alpha));
+			alpha = std::max(alpha, value);
 		}
+		deleteState(nextState);
 	}
 	return value;
 }

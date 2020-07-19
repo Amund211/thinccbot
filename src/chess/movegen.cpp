@@ -468,7 +468,7 @@ void genKingMoves(
 
 }
 
-unsigned int getActions(
+void genChildren(
 	Gamestate const* statep,
 	std::vector<Gamestate*>& gamestates,
 	std::vector<Action*>& actions
@@ -477,7 +477,7 @@ unsigned int getActions(
 	// Both in stalemate and in mate no moves should be generated
 	if (statep->rule50Ply >= 150)
 		// Forced game end after 75 moves w/o captures/pawn moves
-		return 0;
+		return;
 
 	Color toMove = statep->whiteToMove ? WHITE : BLACK;
 	Coordinate kingPos = findKing(statep->board, toMove);
@@ -506,7 +506,7 @@ unsigned int getActions(
 	// 2+ attackers -> only king-moves can get out of check
 	if (amtChecks >= 2) {
 		genKingMoves(statep, toMove, kingPos, attackedSquares, true, gamestates, actions);
-		return actions.size();
+		return;
 	}
 
 	for (int rank=0; rank<8; rank++) {
@@ -540,5 +540,5 @@ unsigned int getActions(
 		}
 	}
 
-	return actions.size();
+	return;
 }

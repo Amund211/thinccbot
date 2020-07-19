@@ -1,9 +1,13 @@
 #ifndef STATES_H_INCLUDED
 #define STATES_H_INCLUDED
 
+#include <string>
+
 struct Action
 {
 	unsigned int column;
+
+	std::string toString();
 };
 
 struct Column
@@ -21,9 +25,8 @@ struct Gamestate
 
 	Gamestate(bool yellowToMove=true);
 	Gamestate(bool yellowToMove, Column columns[7]);
-};
 
-std::string aToString(Action const* actionp);
-std::string sToString(Gamestate const* statep);
+	std::string toString();
+};
 
 #endif

@@ -24,9 +24,9 @@ bool gameOver(Gamestate const* statep)
 	return true;
 }
 
-unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
+void genChildren(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
 	if (gameOver(statep)) {
-		return 0;
+		return;
 	}
 
 	for (unsigned int y=0; y<3; y++) {
@@ -52,7 +52,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 		}
 	}
 
-	return actions.size();
+	return;
 }
 
 int scoreLine(Gamestate const* statep, int x0, int y0, int xinc, int yinc)
@@ -94,19 +94,19 @@ float evaluation(Gamestate const* statep) {
 		return 0;
 }
 
-std::string aToString(Action const* actionp) {
-	return std::to_string(actionp->x) + ", " + std::to_string(actionp->y);
+std::string Action::toString() {
+	return std::to_string(x) + ", " + std::to_string(y);
 }
 
-std::string sToString(Gamestate const* statep) {
+std::string Gamestate::toString() {
 	std::string s{"To move: "};
-	s.append(statep->xToMove ? "X\n" : "O\n");
+	s.append(xToMove ? "X\n" : "O\n");
 	for (unsigned int y=0; y<3; y++) {
 		for (unsigned int x=0; x<3; x++) {
-			if (statep->board[y*3 + x] == 0) {
+			if (board[y*3 + x] == 0) {
 				s.append(" ");
 			} else {
-				s.append(statep->board[y*3 + x] == 1 ? "X" : "O");
+				s.append(board[y*3 + x] == 1 ? "X" : "O");
 			}
 		}
 		s.append("\n");

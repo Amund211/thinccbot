@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "states.h"
 #include "../trees.h"
@@ -9,51 +10,60 @@ bool gameOver(Gamestate const*);
 float evaluation(Gamestate const*);
 
 int main() {
-	Node *root = new Node;
-	root->state = new Gamestate();
+	Gamestate* sp = new Gamestate();
 
 	unsigned int depth = 9;
 	bool player = true;
 	unsigned int ply = 0;
 
-	Evaluation e = bestAction(root, depth);
+	Evaluation e = bestAction(sp, depth);
 	std::cout <<
-		"Best action is:\t" << aToString(e.action) << std::endl <<
+		"Best action is:\t" << e.action->toString() << std::endl <<
 		"Evaluation:\t" << e.evaluation << std::endl;
 
-	std::cout << sToString(root->state);
-	while (!gameOver(root->state)) {
-		Node* nextRoot;
+	delete e.action;
+
+	std::cout << sp->toString();
+
+	std::vector<Gamestate*> states;
+	std::vector<Action*> actions;
+
+	while (!gameOver(sp)) {
+		genChildren(sp, states, actions);
+
 		unsigned int column;
 
-
-		std::cout << "Current state evaluation:\t" << evaluation(root->state) << std::endl;
-		if (player && root->state->yellowToMove) {
+		std::cout << "Current state evaluation:\t" << evaluation(sp) << std::endl;
+		if (player && sp->yellowToMove) {
 			// No input-validation
 			std::cin >> column;
 		} else {
-			e = bestAction(root, depth);
+			e = bestAction(sp, depth);
 			column = e.action->column;
 			std::cout << "Node evaluation:\t" << e.evaluation << std::endl;
 		}
 
+		// Free old state
+		delete sp;
+
 		// Find the corresponding child-node
-		for (unsigned int i=0; i<root->amtChildren; i++) {
-			if (root->children[i]->action->column == column) {
-				nextRoot = root->children[i];
+		for (unsigned int i=0; i<actions.size(); i++) {
+			if (actions[i]->column == column) {
+				sp = states[i];
 			} else {
-				freeSubtree(root->children[i]);
+				delete states[i];
 			}
 		}
 
-		// Free old root
-		delete root;
+		states.clear();
+		actions.clear();
 
-		root = nextRoot;
+		if (!player || sp->yellowToMove)
+			delete e.action;
 
-		std::cout << "\n" << sToString(root->state);
+		std::cout << "\n" << sp->toString();
 		std::cout << "Ply: " << ++ply << std::endl;
 	}
 	std::cout << e.evaluation << std::endl;
-	std::cout << evaluation(root->state) << std::endl;
+	std::cout << evaluation(sp) << std::endl;
 }

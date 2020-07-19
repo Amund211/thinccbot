@@ -1,9 +1,13 @@
 #ifndef STATES_H_INCLUDED
 #define STATES_H_INCLUDED
 
+#include <string>
+
 struct Action
 {
 	bool put; // Whether or not to put
+
+	std::string toString();
 };
 
 struct Gamestate
@@ -13,9 +17,8 @@ struct Gamestate
 	unsigned int timeSinceWhite;
 	unsigned int black;
 	unsigned int timeSinceBlack;
-};
 
-std::string aToString(Action const* actionp);
-std::string sToString(Gamestate const* statep);
+	std::string toString();
+};
 
 #endif

@@ -11,7 +11,7 @@ PGNPATH = "../../../chess/games/KingBase2018-A00-A39.pgn"
 PGNPATH = "../../../chess/games/KingBase2018-A40-A79.pgn"; SKIP_GAMES = 2000
 # Done
 # PGNPATH = "../../../chess/games/KingBase2018-A80-A99.pgn"; SKIP_GAMES = 31330
-PGNPATH = "../../../chess/games/KingBase2018-B00-B19.pgn"; SKIP_GAMES = 11375
+PGNPATH = "../../../chess/games/KingBase2018-B00-B19.pgn"; SKIP_GAMES = 18500
 
 engine = subprocess.Popen(
     [ENGINEPATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
@@ -25,7 +25,6 @@ seen_moves = 0
 def print_results():
     global SKIP_GAMES, games, played_moves, seen_moves, start_time
     time_diff = datetime.now() - start_time
-    seconds = time_diff.days * 24 * 60 * 60 + time_diff.seconds
 
     print("Ran for:", time_diff)
     print("Ended on game", games)
@@ -37,7 +36,7 @@ def print_results():
         "Seen moves:",
         seen_moves,
     )
-    print("Moves per second:", played_moves / seconds)
+    print("Moves per second:", played_moves / time_diff.total_seconds())
 
 
 with open(PGNPATH, encoding="utf-8", errors="replace") as pgn_file:

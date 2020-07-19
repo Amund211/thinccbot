@@ -90,9 +90,9 @@ bool gameOver(Gamestate const* statep)
 	return true;
 }
 
-unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
+void genChildren(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
 	if (won(statep)) {
-		return 0;
+		return;
 	}
 
 	for (unsigned int i=0; i<7; i++) {
@@ -104,7 +104,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 			newstatep->yellowToMove = !newstatep->yellowToMove;
 		}
 	}
-	return actions.size();
+	return;
 
 	for (unsigned int i=1; i<actions.size(); i++) {
 		// Prioritize moves in the center
@@ -124,7 +124,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 		}
 	}
 
-	return actions.size();
+	return;
 }
 
 float evaluateLine(Gamestate const* statep, int8_t color, unsigned int x0, unsigned int y0, int xinc, int yinc, unsigned int amtinc)
@@ -215,21 +215,21 @@ float evaluation(Gamestate const* statep) {
 		return score;
 }
 
-std::string aToString(Action const* actionp) {
-	return std::to_string(actionp->column);
+std::string Action::toString() {
+	return std::to_string(column);
 }
 
-std::string sToString(Gamestate const* statep) {
+std::string Gamestate::toString() {
 	std::string s{"To move: "};
-	s.append(statep->yellowToMove ? "yellow\n" : "red\n");
+	s.append(yellowToMove ? "yellow\n" : "red\n");
 	s.append(" 0 1 2 3 4 5 6 \n");
 	for (int y=5; y>=0; y--) {
 		s.append("|");
 		for (unsigned int x=0; x<7; x++) {
-			if (statep->columns[x].stack[y] == 0) {
+			if (columns[x].stack[y] == 0) {
 				s.append(" |");
 			} else {
-				s.append(statep->columns[x].stack[y] == 1 ? "Y|" : "R|");
+				s.append(columns[x].stack[y] == 1 ? "Y|" : "R|");
 			}
 		}
 		s.append("\n");

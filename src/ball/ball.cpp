@@ -22,12 +22,12 @@ void deleteAction(Action* actionp)
 	delete actionp;
 }
 
-unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
+void genChildren(Gamestate const* statep, std::vector<Gamestate*>& gamestates, std::vector<Action*>& actions) {
 	// Game has ended
 	if (statep->white >= 9) {
-		return 0;
+		return;
 	} else if (statep->black >= 9) {
-		return 0;
+		return;
 	}
 
 
@@ -67,7 +67,7 @@ unsigned int getActions(Gamestate const* statep, std::vector<Gamestate*>& gamest
 	}
 	state1->whitetoMove = !state1->whitetoMove;
 
-	return 2;
+	return;
 }
 
 float evaluation(Gamestate const* statep) {
@@ -79,12 +79,12 @@ float evaluation(Gamestate const* statep) {
 	return static_cast<float>(static_cast<int>(statep->white) - static_cast<int>(statep->black));
 }
 
-std::string aToString(Action const* actionp) {
-	return (actionp->put ? "put" : "no put");
+std::string Action::toString() {
+	return put ? "put" : "no put";
 }
 
-std::string sToString(Gamestate const* statep) {
-	return std::string("To move: ") + (statep->whitetoMove ? "white\n" : "black\n") +
-		"\twhite: " + std::to_string(statep->white) + ":" + std::to_string(statep->timeSinceWhite) + "\n" +
-		"\tblack: " + std::to_string(statep->black) + ":" + std::to_string(statep->timeSinceBlack);
+std::string Gamestate::toString() {
+	return std::string("To move: ") + (whitetoMove ? "white\n" : "black\n") +
+		"\twhite: " + std::to_string(white) + ":" + std::to_string(timeSinceWhite) + "\n" +
+		"\tblack: " + std::to_string(black) + ":" + std::to_string(timeSinceBlack);
 }
