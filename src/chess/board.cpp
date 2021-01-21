@@ -75,34 +75,14 @@ bool Coordinate::operator !=(const Coordinate& b) const
 Piece Board::get(Coordinate pos) const
 {
 	assert(pos.isValid());
-	uint8_t elem = _board[(7 - pos.rank) * 4 + (pos.file >> 1)];
-	if (pos.file % 2 == 0)
-	{
-		// Big nibble
-		return (elem >> 4);
-	}
-	else
-	{
-		// Small nibble
-		return elem & 15;
-	};
+	return _board[(7 - pos.rank) * 8 + pos.file];
 }
 
 void Board::set(Coordinate pos, Piece piece)
 {
 	assert(pos.isValid());
-	unsigned int index = (7 - pos.rank) * 4 + (pos.file >> 1);
-	uint8_t elem = _board[index];
-	if (pos.file % 2 == 0)
-	{
-		// Big nibble
-		_board[index] = (elem & ~(15<<4)) | (piece << 4);
-	}
-	else
-	{
-		// Small nibble
-		_board[index] = (elem & ~15) | piece;
-	};
+	unsigned int index = (7 - pos.rank) * 8 + pos.file;
+	_board[index] = piece;
 }
 
 void Board::move(Coordinate from, Coordinate to)

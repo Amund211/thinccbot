@@ -93,7 +93,7 @@ struct Line
 
 struct Board
 {
-	uint8_t _board[32]; // 64 nibbles
+	uint8_t _board[64];
 
 	Piece get(Coordinate pos) const;
 	void set(Coordinate pos, Piece piece);
