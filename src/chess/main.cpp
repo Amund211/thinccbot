@@ -8,9 +8,10 @@
 
 #define VALIDATE false
 #define TEST false
+#define PLAY true
 
 #if VALIDATE
-int validate()
+int main()
 {
 	// Read a fen from stdin and write all legal moves to stdout
 	// Used to validate the move-generation
@@ -55,7 +56,7 @@ int validate()
 #endif // VALIDATE
 
 #if TEST
-int test()
+int main()
 {
 	std::string FEN;
 	Gamestate s;
@@ -196,7 +197,8 @@ int test()
 #endif // TEST
 
 
-int play()
+#if PLAY
+int main()
 {
 	std::string FEN;
 	Gamestate* sp;
@@ -353,15 +355,4 @@ int play()
 
 	return 0;
 }
-
-int main()
-{
-#if VALIDATE
-	return validate();
-#elif TEST
-	return test();
-#else
-	return play();
-#endif
-}
-
+#endif // PLAY
