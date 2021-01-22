@@ -114,7 +114,7 @@ void Board::print(Color perspective, bool colorTerminal, std::ostream& stream) c
 					// Black square - colored blue
 					stream << "\033[1;37;104m";
 			}
-			stream << " " << pieceToUnicode[get({rank, file})] << " ";
+			stream << pieceToUnicode[get({rank, file})] << pieceToUnicode[get({rank, file})];
 		}
 
 		if (colorTerminal)
@@ -125,7 +125,7 @@ void Board::print(Color perspective, bool colorTerminal, std::ostream& stream) c
 
 	stream << "  ";
 	for (int file=leftFile; file>=0 && file<8; file-=rankDirection)
-		stream << " " << static_cast<char>('a' + file) << " ";
+		stream << static_cast<char>('a' + file) << static_cast<char>('a' + file);
 	stream << std::endl;
 }
 
