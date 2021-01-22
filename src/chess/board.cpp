@@ -14,8 +14,7 @@
 Coordinate::Coordinate(std::string SAN)
 	: rank{SAN[1] - '1'}, file{SAN[0] - 'a'}
 {
-	if (!isValid())
-		throw std::invalid_argument(SAN + std::string(" is an invalid SAN coordinate"));
+	assert(isValid()); /* Invalid SAN coordinate */
 }
 
 Delta Coordinate::step() const
