@@ -1,7 +1,7 @@
 CXX ?= g++
 RM ?= rm -f
 
-CXXFLAGS ?= -Wall -Wextra -Wpedantic -O3
+CXXFLAGS ?= -Wall -Wextra -Wpedantic -O3 -std=c++17
 
 # Install in current folder
 prefix ?= .

@@ -4,24 +4,48 @@
 #include <map>
 #include <memory>
 #include <array>
+#include <algorithm>
 #include <stdexcept>
 #include <cassert>
 
 #include "board.h"
 #include "states.h"
 #include "attacks.h"
+#include "evaluation.h"
 #include "../game.h"
 
-Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamestates, const Coordinate& target)
+Gamestate* insertChild(Gamestate const* current, const Coordinate& from, const Coordinate& to, Piece promotion, float score, std::vector<ChildNode>& children)
 {
-	// Insert a copy of the current state into gamestates
+	// Insert a new child into `children` and return a pointer to the newly created gamestate
+	// Creates new `Action` and `Gamestate` objects, and handles some of the
+	// new state logic:
+	// 	Castling rights are revoked when a rook is captured
+	// 	`whiteToMove` is updated
+	// 	`passantSquare` is reset
+	// 	`board.move(from, to)` is executed
+	// 	Pawns are properly promoted when `promotion` != `NONE`
+	// 	`rule50Ply` is incremented
+
+	// Callers must be sure to:
+	// 	Set `passantSquare` when relevant
+	// 	Revoke castling rights when castling or moving a rook
+	// 	Reset `rule50Ply` when moving a pawn of capturing a piece
+	//	Perform side effects: moving rooks when castling, removing pawns when en passant
+
 	Gamestate* newstatep = new Gamestate{*current};
-	gamestates.push_back(newstatep);
+	Action* newactionp = new Action{from, to, promotion};
+
+	Color toMove = newstatep->whiteToMove ? WHITE : BLACK;
+
+	Piece targetPiece = newstatep->board.get(to);
+	if (targetPiece != NONE)
+		// Search moves using smaller attackers first
+		score -= materialValue[pieceType(newstatep->board.get(from))] / 10;
 
 	// Test if a rook is being captured
-	if (target.rank == (newstatep->whiteToMove ? 7 : 0)) {
+	if (to.rank == (toMove == WHITE ? 7 : 0)) {
 		// Unset queen-/kingside castling-rights if capturing on a or h
-		switch (target.file) {
+		switch (to.file) {
 			case 0:
 				(newstatep->whiteToMove ? newstatep->blackCastle : newstatep->whiteCastle).queenside = false;
 				break;
@@ -40,11 +64,33 @@ Gamestate* createState(Gamestate const* current, std::vector<Gamestate*>& gamest
 	newstatep->passantSquare.rank = -1;
 	newstatep->passantSquare.file = -1;
 
+	if (promotion != NONE) {
+		newstatep->board.set(from, NONE);
+		newstatep->board.set(to, toMove | promotion);
+	} else {
+		newstatep->board.move(from, to);
+	}
+
 	// Update ply since capture/pawn move
 	newstatep->rule50Ply++;
 
+	// Search obvious moves first
+	score += pawnDirection(toMove) * psqtScore(newstatep->board);
+
+	ChildNode newChild {newstatep, newactionp, score};
+
+	// Insert new children in descending order
+	std::vector<ChildNode>::iterator it = std::lower_bound(children.begin(), children.end(), newChild);
+	children.insert(it, newChild);
+
 	return newstatep;
 }
+
+inline Gamestate* insertChild(Gamestate const* current, const Coordinate& from, const Coordinate& to, std::vector<ChildNode>& children)
+{
+	return insertChild(current, from, to, NONE, 0, children);
+}
+
 
 void genPawnMoves(
 	Gamestate const* statep,
@@ -53,8 +99,7 @@ void genPawnMoves(
 	const std::unique_ptr<Coordinate>& mustKill,
 	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
 	int direction = pawnDirection(c);
@@ -83,19 +128,13 @@ void genPawnMoves(
 			if (target.rank == (c == WHITE ? 7 : 0)) {
 				// Also promote
 				for (Piece promotion=QUEEN; promotion>=KNIGHT; promotion--) {
-					actions.push_back(new Action{pos, target, promotion});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					newstatep->board.set(pos, NONE);
-					newstatep->board.set(target, c | promotion);
+					// Search only queen promotion first
+					Gamestate* newstatep = insertChild(statep, pos, target, promotion, -(promotion == QUEEN ? 0 : materialValue[promotion]), children);
 					// Pawn move & capture
 					newstatep->rule50Ply = 0;
 				}
 			} else {
-				actions.push_back(new Action{pos, target});
-
-				Gamestate* newstatep = createState(statep, gamestates, target);
-				newstatep->board.move(pos, target);
+				Gamestate* newstatep = insertChild(statep, pos, target, children);
 				// Pawn move & capture
 				newstatep->rule50Ply = 0;
 			}
@@ -106,10 +145,7 @@ void genPawnMoves(
 			if (mustBlock && !mustBlock->contains(target))
 				continue;
 			// En passant
-			actions.push_back(new Action{pos, target});
-
-			Gamestate* newstatep = createState(statep, gamestates, target);
-			newstatep->board.move(pos, target);
+			Gamestate* newstatep = insertChild(statep, pos, target, children);
 			newstatep->board.set(pawnPos, NONE);
 			// Pawn move & capture
 			newstatep->rule50Ply = 0;
@@ -130,19 +166,13 @@ void genPawnMoves(
 			if (target.rank == (c == WHITE ? 7 : 0)) {
 				// Also promote
 				for (Piece promotion=QUEEN; promotion>=KNIGHT; promotion--) {
-					actions.push_back(new Action{pos, target, promotion});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					newstatep->board.set(pos, NONE);
-					newstatep->board.set(target, c | promotion);
+					// Search only queen promotion first
+					Gamestate* newstatep = insertChild(statep, pos, target, promotion, -(promotion == QUEEN ? 0 : materialValue[promotion]), children);
 					// Pawn move
 					newstatep->rule50Ply = 0;
 				}
 			} else {
-				actions.push_back(new Action{pos, target});
-
-				Gamestate* newstatep = createState(statep, gamestates, target);
-				newstatep->board.move(pos, target);
+				Gamestate* newstatep = insertChild(statep, pos, target, children);
 				// Pawn move
 				newstatep->rule50Ply = 0;
 			}
@@ -153,10 +183,7 @@ void genPawnMoves(
 			if (!mustBlock || mustBlock->contains(target)) {
 				if (statep->board.get(target) == NONE) {
 					// Move two steps
-					actions.push_back(new Action{pos, target});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					newstatep->board.move(pos, target);
+					Gamestate* newstatep = insertChild(statep, pos, target, children);
 					newstatep->passantSquare = target - Coordinate{direction, 0};
 					// Pawn move
 					newstatep->rule50Ply = 0;
@@ -173,8 +200,7 @@ void genKnightMoves(
 	const std::unique_ptr<Coordinate>& mustKill,
 	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
 	auto pinnedElement = pinnedPositions.find(pos);
@@ -192,15 +218,13 @@ void genKnightMoves(
 			continue;
 
 		Piece targetPiece = statep->board.get(target);
+		bool emptySquare = targetPiece == NONE;
 		// Empty squares are black, but this does not matter in this case
-		if (targetPiece == NONE || pieceColor(targetPiece) != c) {
+		if (emptySquare || pieceColor(targetPiece) != c) {
 			assert(pieceType(targetPiece) != KING);
 			// Move or attack
-			actions.push_back(new Action{pos, target});
-
-			Gamestate* newstatep = createState(statep, gamestates, target);
-			newstatep->board.move(pos, target);
-			if (targetPiece != NONE)
+			Gamestate* newstatep = insertChild(statep, pos, target, children);
+			if (!emptySquare)
 				// Capture
 				newstatep->rule50Ply = 0;
 		}
@@ -215,8 +239,7 @@ void genBishopMoves(
 	const std::unique_ptr<Coordinate>& mustKill,
 	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
 	auto pinnedElement = pinnedPositions.find(pos);
@@ -241,19 +264,12 @@ void genBishopMoves(
 					if (cantMove)
 						continue;
 					// Move
-					actions.push_back(new Action{pos, target});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					newstatep->board.move(pos, target);
+					insertChild(statep, pos, target, children);
 				} else if (pieceColor(targetPiece) != c) {
 					assert(pieceType(targetPiece) != KING);
 					if (!cantMove) {
-						// Attack
-						actions.push_back(new Action{pos, target});
-
-						Gamestate* newstatep = createState(statep, gamestates, target);
-						newstatep->board.move(pos, target);
 						// Capture
+						Gamestate* newstatep = insertChild(statep, pos, target, children);
 						newstatep->rule50Ply = 0;
 					}
 
@@ -292,8 +308,7 @@ void genRookMoves(
 	const std::unique_ptr<Coordinate>& mustKill,
 	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
 	auto pinnedElement = pinnedPositions.find(pos);
@@ -321,10 +336,7 @@ void genRookMoves(
 					if (cantMove)
 						continue;
 					// Move
-					actions.push_back(new Action{pos, target});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					newstatep->board.move(pos, target);
+					Gamestate* newstatep = insertChild(statep, pos, target, children);
 					if (pos.rank == homeRank)
 						// Unset castling avaliability
 						setCastle(newstatep, c, pos);
@@ -332,12 +344,8 @@ void genRookMoves(
 				} else if (pieceColor(targetPiece) != c) {
 					assert(pieceType(targetPiece) != KING);
 					if (!cantMove) {
-						// Attack
-						actions.push_back(new Action{pos, target});
-
-						Gamestate* newstatep = createState(statep, gamestates, target);
-						newstatep->board.move(pos, target);
 						// Capture
+						Gamestate* newstatep = insertChild(statep, pos, target, children);
 						newstatep->rule50Ply = 0;
 
 						if (pos.rank == homeRank)
@@ -363,12 +371,11 @@ void genQueenMoves(
 	const std::unique_ptr<Coordinate>& mustKill,
 	const std::unique_ptr<Line>& mustBlock,
 	const std::map<Coordinate, Line>& pinnedPositions,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
-	genBishopMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, gamestates, actions);
-	genRookMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+	genBishopMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, children);
+	genRookMoves(statep, c, pos, mustKill, mustBlock, pinnedPositions, children);
 }
 
 void genKingMoves(
@@ -377,8 +384,7 @@ void genKingMoves(
 	const Coordinate& pos,
 	const std::array<bool, 10>& attackedSquares,
 	bool inCheck,
-	std::vector<Gamestate*>& gamestates,
-	std::vector<Action*>& actions
+	std::vector<ChildNode>& children
 )
 {
 	const Castle& myCastle = (c == WHITE ? statep->whiteCastle : statep->blackCastle);
@@ -409,11 +415,7 @@ void genKingMoves(
 					statep->board.get(target - Coordinate{0, 1}) == NONE &&
 					!attackedSquares[kingMoveOrder.find({0, -1})->second]
 				) {
-					actions.push_back(new Action{pos, target});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					// Move the king
-					newstatep->board.move(pos, target);
+					Gamestate* newstatep = insertChild(statep, pos, target, children);
 					// Move the rook
 					newstatep->board.move({(c == WHITE ? 0 : 7), 0}, target + Coordinate{0, 1});
 
@@ -432,11 +434,7 @@ void genKingMoves(
 					statep->board.get(target + Coordinate{0, -1}) == NONE &&
 					!attackedSquares[kingMoveOrder.find({0, 1})->second]
 				) {
-					actions.push_back(new Action{pos, target});
-
-					Gamestate* newstatep = createState(statep, gamestates, target);
-					// Move the king
-					newstatep->board.move(pos, target);
+					Gamestate* newstatep = insertChild(statep, pos, target, children);
 					// Move the rook
 					newstatep->board.move({(c == WHITE ? 0 : 7), 7}, target - Coordinate{0, 1});
 
@@ -449,10 +447,7 @@ void genKingMoves(
 		// Empty squares are black, but this does not matter in this case
 		} else if (targetPiece == NONE || pieceColor(targetPiece) != c) {
 			// Move or attack
-			actions.push_back(new Action{pos, target});
-
-			Gamestate* newstatep = createState(statep, gamestates, target);
-			newstatep->board.move(pos, target);
+			Gamestate* newstatep = insertChild(statep, pos, target, children);
 
 			// Can't castle after moving king
 			if (c == WHITE)
@@ -503,9 +498,11 @@ void genChildren(
 		pinnedPositions
 	);
 
+	std::vector<ChildNode> children;
+
 	// 2+ attackers -> only king-moves can get out of check
 	if (amtChecks >= 2) {
-		genKingMoves(statep, toMove, kingPos, attackedSquares, true, gamestates, actions);
+		genKingMoves(statep, toMove, kingPos, attackedSquares, true, children);
 		return;
 	}
 
@@ -515,22 +512,22 @@ void genChildren(
 			if (p != NONE && pieceColor(p) == toMove) {
 				switch (pieceType(p)) {
 					case PAWN:
-						genPawnMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+						genPawnMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, children);
 						break;
 					case KNIGHT:
-						genKnightMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+						genKnightMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, children);
 						break;
 					case BISHOP:
-						genBishopMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+						genBishopMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, children);
 						break;
 					case ROOK:
-						genRookMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+						genRookMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, children);
 						break;
 					case QUEEN:
-						genQueenMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, gamestates, actions);
+						genQueenMoves(statep, toMove, {rank, file}, mustKill, mustBlock, pinnedPositions, children);
 						break;
 					case KING:
-						genKingMoves(statep, toMove, kingPos, attackedSquares, amtChecks != 0, gamestates, actions);
+						genKingMoves(statep, toMove, kingPos, attackedSquares, amtChecks != 0, children);
 						break;
 					default:
 						throw std::invalid_argument("Invalid piece on board");
@@ -538,6 +535,12 @@ void genChildren(
 				}
 			}
 		}
+	}
+
+	// Search the moves with largest score first
+	for (auto child = children.rbegin(); child != children.rend(); child++) {
+		actions.push_back(child->action);
+		gamestates.push_back(child->gamestate);
 	}
 
 	return;

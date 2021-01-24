@@ -1,12 +1,9 @@
 #include "evaluation.h"
-#include "psqt.h"
 
 #include "states.h"
 #include "pieces.h"
 #include "checkcheck.h"
 #include "../game.h"
-
-constexpr float materialValue[7] = {0, 1, 3, 3, 5, 9, 0};
 
 float materialCount(const Board& b)
 {

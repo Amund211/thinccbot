@@ -1,6 +1,6 @@
 // Based on https://www.chessprogramming.org/Simplified_Evaluation_Function
 
-constexpr float PSQT[16][8][8] = {
+inline constexpr float PSQT[16][8][8] = {
 	{ },
 	{ // Black pawn
 		{   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0 },

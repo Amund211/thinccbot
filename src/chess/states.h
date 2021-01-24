@@ -51,4 +51,15 @@ struct Gamestate
 	inline std::string toString() const { return toFEN(); }
 };
 
+struct ChildNode
+{
+	Gamestate* gamestate;
+	Action* action;
+	float score; /* Relative move score used for move ordering */
+};
+
+inline bool operator<(const ChildNode& a, const ChildNode& b)
+{
+	return a.score < b.score;
+}
 #endif
